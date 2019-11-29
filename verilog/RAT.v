@@ -6,12 +6,12 @@
 `define LOG_PHYS    $clog2(NUM_PHYS_REGS)
 
 module RAT #(
-	/* 
-	 * NUM_ARCH_REGS is the number of architectural registers present in the 
-	 * RAT. 
+	/*
+	 * NUM_ARCH_REGS is the number of architectural registers present in the
+	 * RAT.
 	 *
-	 * sim_main assumes that the value of LO is stored in architectural 
-	 * register 33, and that the value of HI is stored in architectural 
+	 * sim_main assumes that the value of LO is stored in architectural
+	 * register 33, and that the value of HI is stored in architectural
 	 * register 34.
 	 *
 	 * It is left as an exercise to the student to explain why.
@@ -20,15 +20,21 @@ module RAT #(
     parameter NUM_PHYS_REGS = 64
     /* Maybe Others? */
 )
-(	
-    /* Write Me */
-		); 
+(
+    input clk,
+    input reset);
 
 	// actual RAT memory
 	reg [`LOG_PHYS-1:0] regPtrs [NUM_ARCH_REGS-1:0] /*verilator public_flat*/;
-
+  integer i;
+    always @(posedge clk or negedge reset) begin
+        if(!reset) begin
+            for(i = 0; i < NUM_ARCH_REGS; i = i + 1) begin
+                regPtrs[i] = i;
+            end
+        end
+    end
     /* Write Me */
 
 
 endmodule
-

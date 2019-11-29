@@ -9,7 +9,7 @@ PROJECT?=4
 
 #By default, Verilator will treat warnings as errors. To change this behavior, 
 #uncomment the following line:
-#VERILATOR_ALLOW_WARNINGS=1
+VERILATOR_ALLOW_WARNINGS=1
 
 #By default, verilator will not generate traces (vcd files). To change this 
 #behavior, uncomment the following line:

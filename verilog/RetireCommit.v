@@ -1,7 +1,7 @@
 /**************************************
 * Module: RetireCommit
-* Date:2013-12-10  
-* Author: isaac     
+* Date:2013-12-10
+* Author: isaac
 *
 * Description: Handles commits to the ROB, and retires instructions from the ROB.
 *
@@ -13,18 +13,17 @@ module  RetireCommit #(
     /* You may want more parameters here */
 )
 (
-    /* Write Me */
-);/*verilator public_module*/
+    input clk,
+    input reset);/*verilator public_module*/
 
 RAT #(
     .NUM_ARCH_REGS(35),
     .NUM_PHYS_REGS(NUM_PHYS_REGS)
     /* Maybe Others? */
 )RRAT(
-    /* Write Me */
-);
+    .clk(clk),
+    .reset(reset));
 
     /* Write Me */
 
 endmodule
-

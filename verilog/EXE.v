@@ -1,21 +1,21 @@
 `include "config.v"
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    12:09:45 10/18/2013 
-// Design Name: 
-// Module Name:    EXE2 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
+// Company:
+// Engineer:
 //
-// Dependencies: 
+// Create Date:    12:09:45 10/18/2013
+// Design Name:
+// Module Name:    EXE2
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
 //
-// Revision: 
+// Dependencies:
+//
+// Revision:
 // Revision 0.01 - File Created
-// Additional Comments: 
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module EXE(
@@ -72,38 +72,41 @@ module EXE(
     //We need to read from MEM (passed to MEM)
     output reg MemRead1_OUT,
     //We need to write to MEM (passed to MEM)
-    output reg MemWrite1_OUT
-    
+    output reg MemWrite1_OUT,
+
+    output reg [31:0] hi,
+    output reg [31:0] lo
+
 `ifdef HAS_FORWARDING
     ,
-        
+
     //Bypass inputs for calculations that have completed MEM
 	 input[4:0] BypassReg1_MEMEXE,
 	 input[31:0] BypassData1_MEMEXE,
 	 input BypassValid1_MEMEXE,
-	 
+
     //Bypass outputs for calculations that have completed EXE
 	 output [31:0] ALU_result_async1,
 	 output ALU_result_async_valid1
 `endif
     );
-	 
+
 
 	 wire [31:0] A1;
 	 wire [31:0] B1;
 	 wire[31:0]ALU_result1;
-	 	 
+
 	 wire comment1;
 	 assign comment1 = 1;
-	 
+
 `ifdef HAS_FORWARDING
 RegValue2 RegAValue(
-    .ReadRegister1(RegisterA1_IN), 
-    .RegisterData1(OperandA1_IN), 
-    .WriteRegister1stPri1(WriteRegister1_OUT), 
-    .WriteData1stPri1(ALU_result1_OUT), 
-    .Valid1stPri1(RegWrite1_OUT && !(MemRead1_OUT || MemWrite1_OUT)), 
-    .WriteRegister2ndPri1(BypassReg1_MEMEXE), 
+    .ReadRegister1(RegisterA1_IN),
+    .RegisterData1(OperandA1_IN),
+    .WriteRegister1stPri1(WriteRegister1_OUT),
+    .WriteData1stPri1(ALU_result1_OUT),
+    .Valid1stPri1(RegWrite1_OUT && !(MemRead1_OUT || MemWrite1_OUT)),
+    .WriteRegister2ndPri1(BypassReg1_MEMEXE),
     .WriteData2ndPri1(BypassData1_MEMEXE),
     .Valid2ndPri1(BypassValid1_MEMEXE),
     .Output1(A1),
@@ -111,14 +114,14 @@ RegValue2 RegAValue(
     );
 
 RegValue2 RegBValue(
-    .ReadRegister1(RegisterB1_IN), 
-    .RegisterData1(OperandB1_IN), 
-    .WriteRegister1stPri1(WriteRegister1_OUT), 
-    .WriteData1stPri1(ALU_result1_OUT), 
-    .Valid1stPri1(RegWrite1_OUT && !(MemRead1_OUT || MemWrite1_OUT)), 
-    .WriteRegister2ndPri1(BypassReg1_MEMEXE), 
+    .ReadRegister1(RegisterB1_IN),
+    .RegisterData1(OperandB1_IN),
+    .WriteRegister1stPri1(WriteRegister1_OUT),
+    .WriteData1stPri1(ALU_result1_OUT),
+    .Valid1stPri1(RegWrite1_OUT && !(MemRead1_OUT || MemWrite1_OUT)),
+    .WriteRegister2ndPri1(BypassReg1_MEMEXE),
     .WriteData2ndPri1(BypassData1_MEMEXE),
-    .Valid2ndPri1(BypassValid1_MEMEXE), 
+    .Valid2ndPri1(BypassValid1_MEMEXE),
     .Output1(B1),
 	 .comment(1'b0)
     );
@@ -144,10 +147,10 @@ ALU ALU1(
     .LO_OUT(LO_new1),
     .HI_IN(HI),
     .LO_IN(LO),
-    .A(A1), 
-    .B(B1), 
-    .ALU_control(ALU_Control1_IN), 
-    .shiftAmount(ShiftAmount1_IN), 
+    .A(A1),
+    .B(B1),
+    .ALU_control(ALU_Control1_IN),
+    .shiftAmount(ShiftAmount1_IN),
     .CLK(!CLK)
     );
 
@@ -156,14 +159,14 @@ wire [31:0] MemWriteData1;
 
 `ifdef HAS_FORWARDING
 RegValue2 MemoryDataValue(
-    .ReadRegister1(WriteRegister1_IN), 
-    .RegisterData1(MemWriteData1_IN), 
-    .WriteRegister1stPri1(WriteRegister1_OUT), 
-    .WriteData1stPri1(ALU_result1_OUT), 
-    .Valid1stPri1(RegWrite1_OUT && !(MemRead1_OUT || MemWrite1_OUT)), 
-    .WriteRegister2ndPri1(BypassReg1_MEMEXE), 
+    .ReadRegister1(WriteRegister1_IN),
+    .RegisterData1(MemWriteData1_IN),
+    .WriteRegister1stPri1(WriteRegister1_OUT),
+    .WriteData1stPri1(ALU_result1_OUT),
+    .Valid1stPri1(RegWrite1_OUT && !(MemRead1_OUT || MemWrite1_OUT)),
+    .WriteRegister2ndPri1(BypassReg1_MEMEXE),
     .WriteData2ndPri1(BypassData1_MEMEXE),
-    .Valid2ndPri1(BypassValid1_MEMEXE), 
+    .Valid2ndPri1(BypassValid1_MEMEXE),
     .Output1(MemWriteData1),
 	 .comment(1'b0)
     );
@@ -189,6 +192,8 @@ always @(posedge CLK or negedge RESET) begin
 	end else if(CLK) begin
        HI <= new_HI;
        LO <= new_LO;
+       hi <= new_HI;
+       lo <= new_LO;
 `ifdef USE_DCACHE
 		if(STALL_fMEM) begin
             $display("EXE[STALL_fMEM]:Instr1_OUT=%x,Instr1_PC_OUT=%x", Instr1_OUT, Instr1_PC_OUT);
