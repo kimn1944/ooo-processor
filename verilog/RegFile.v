@@ -1,21 +1,21 @@
 `include "config.v"
 //////////////////////////////////////////////////////////////////////////////////
-// Company:
-// Engineer:
+// Company: 
+// Engineer: 
+// 
+// Create Date:    17:27:55 10/20/2013 
+// Design Name: 
+// Module Name:    RegFile 
+// Project Name: 
+// Target Devices: 
+// Tool versions: 
+// Description: 
 //
-// Create Date:    17:27:55 10/20/2013
-// Design Name:
-// Module Name:    RegFile
-// Project Name:
-// Target Devices:
-// Tool versions:
-// Description:
+// Dependencies: 
 //
-// Dependencies:
-//
-// Revision:
+// Revision: 
 // Revision 0.01 - File Created
-// Additional Comments:
+// Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
 module RegFile(
@@ -38,19 +38,15 @@ module RegFile(
     /*Data to write*/
     input [31:0] WriteData1,
     /*Actually do it?*/
-     input Write1,
-    input sys);
-
+     input Write1
+);
+	 
     reg [31:0] Reg [0:31]/*verilator public*/;
-
+    
     assign DataA1 = Reg[RegA1];
     assign DataB1 = Reg[RegB1];
     assign DataC1 = Reg[RegC1];
-
-    always @(negedge sys) begin
-        Reg[2] <= 0;
-    end
-
+		
 always @(posedge CLK or negedge RESET) begin
 	if (!RESET) begin
 		Reg[0] <= 0;

@@ -51,14 +51,10 @@ module MEM(
 	 output reg [1:0] data_write_size_2DM,
     input [31:0] data_read_fDM,
 	 output MemRead_2DM,
-	 output MemWrite_2DM
-`ifdef USE_DCACHE
-    ,
-	 output MemFlush_2DM,
-	 input data_valid_fDM,
-
-	output Mem_Needs_Stall
-`endif
+	 output MemWrite_2DM,
+	//********************************************************************
+     input stall_IC
+    //********************************************************************
 
 `ifdef HAS_FORWARDING
     ,
@@ -84,9 +80,6 @@ module MEM(
 
 	 wire MemWrite;
 	 wire MemRead;
-`ifdef USE_DCACHE
-	 wire MemFlush;
-`endif
 	 
 	 wire [31:0] ALU_result;
 	 
@@ -94,9 +87,6 @@ module MEM(
 	 
     assign MemWrite = MemWrite1_IN;
     assign MemRead = MemRead1_IN;
-`ifdef USE_DCACHE
-    assign MemFlush = (ALU_Control == 6'b000011);
-`endif
     assign ALU_result = ALU_result1_IN;
     assign ALU_Control = ALU_Control1_IN;
     assign MemoryData = MemoryData1;
@@ -108,10 +98,6 @@ module MEM(
 	 assign MemRead_2DM = MemRead;
     assign MemWrite_2DM = MemWrite;
 	 
-`ifdef USE_DCACHE
-	 assign Mem_Needs_Stall = (MemRead||MemWrite||MemFlush) && !data_valid_fDM;//(data_valid_fDM && data_valid_fDM_simulator);
-	 assign MemFlush_2DM = MemFlush;
-`endif
 	 
      reg [31:0]WriteData1;
      
@@ -309,17 +295,7 @@ always @(posedge CLK or negedge RESET) begin
 		RegWrite1_OUT <= 0;
 		WriteData1_OUT <= 0;
 		$display("MEM:RESET");
-	end else if(CLK) begin
-`ifdef USE_DCACHE
-		if(Mem_Needs_Stall) begin
-			$display("MEM[STALL]:Instr1_IN=%x,Instr1_PC_IN=%x", Instr1_IN, Instr1_PC_IN);
-			$display("MEM[STALL]:data_address_2DM=%x; data_write_2DM(%d)=%x(%d); data_read_fDM(%d)=%x",data_address_2DM,MemWrite_2DM,data_write_2DM,data_write_size_2DM,MemRead_2DM,data_read_fDM);
-			Instr1_OUT <= 0;
-			WriteRegister1_OUT <= 0;
-			RegWrite1_OUT <= 0;
-			WriteData1_OUT <= 0;
-		end else begin
-`endif
+	end else if(CLK & !stall_IC) begin
 			Instr1_OUT <= Instr1_IN;
 			Instr1_PC_OUT <= Instr1_PC_IN;
 			WriteRegister1_OUT <= WriteRegister1_IN;
@@ -329,9 +305,6 @@ always @(posedge CLK or negedge RESET) begin
 				$display("MEM:Instr1_OUT=%x,Instr1_PC_OUT=%x,WriteData1=%x; Write?%d to %d",Instr1_IN,Instr1_PC_IN,WriteData1, RegWrite1_IN, WriteRegister1_IN);
 				$display("MEM:data_address_2DM=%x; data_write_2DM(%d)=%x(%d); data_read_fDM(%d)=%x",data_address_2DM,MemWrite_2DM,data_write_2DM,data_write_size_2DM,MemRead_2DM,data_read_fDM);
 			end
-`ifdef USE_DCACHE
-		end
-`endif
 	end
 end
 

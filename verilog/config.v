@@ -19,13 +19,5 @@
 `define USE_DCACHE
 
 //Added before project 4 starts
-`define OUT_OF_ORDER
+//`define OUT_OF_ORDER
 
-`ifdef OUT_OF_ORDER
-//Also, before project 4:
-//  Cache.v
-//  RegRead.v
-//  PhysRegFile.v
-//  RAT.v
-//  RetireCommit.v
-`endif

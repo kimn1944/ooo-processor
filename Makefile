@@ -1,33 +1,20 @@
 #ECE 201/401 Project Unified Makefile
+#Specify the project you are compiling for here:PROJECT?=3
+#Yes, project 3 is correct.
 
-#Specify the project you are compiling for here:
-PROJECT?=4
-#1: just the base stuff
-#2: superscalar in-order without caches [been skipped in recent years]
-#3: scalar with caches  [Called project 2]
-#4: single-issue out-of-order with caches [Called project 3]
-
-#By default, Verilator will treat warnings as errors. To change this behavior, 
+#By default, Verilator will treat warnings as errors. To change this behavior,
 #uncomment the following line:
 VERILATOR_ALLOW_WARNINGS=1
 
-#By default, verilator will not generate traces (vcd files). To change this 
+#By default, verilator will not generate traces (vcd files). To change this
 #behavior, uncomment the following line:
 #SUPPORT_VCD=1
 
-#When completing projects 3 and 4, if you want to enable the superscalar 
-#features in sim_main, uncomment the following line:
-#ENABLE_SUPERSCALAR=1
-
-
+#YOU SHOULDN'T NEED TO CHANGE ANYTHING BELOW THIS LINE
 #=======================================================================
 #=======================================================================
-#Options below here are for the TA to change when switching between labs
-
 #Where to find the tests
-##THE TA MUST CHANGE THIS TO THE LOCATION WHERE THE TESTS ARE ACTUALLY STORED!!!!
 ECE_401_TESTS=http://www.cs.rochester.edu/~swang/ece401/ece401-tests.tar.xz
-
 #What verilator to use
 VERILATOR_VER=3.876
 #How to untar verilator (change if not using a .tgz source)
@@ -64,25 +51,9 @@ all: VMIPS
 ifneq ($(PROJECT), 1)
 VFLAGS+=-DUSE_ICACHE -DUSE_DCACHE
 endif
-ENABLE_SUPERSCALAR?=0
-ENABLE_OOO?=0
 
-ifeq ($(PROJECT), 2)
-ENABLE_SUPERSCALAR=1
-else ifeq ($(PROJECT), 3)
+ifeq ($(PROJECT), 3)
 SM_FLAGS+=-DDEBUG_CACHE
-else ifeq ($(PROJECT), 4)
-ENABLE_OOO=1
-endif
-
-ifeq ($(ENABLE_SUPERSCALAR),1)
-VFLAGS+=-DSUPERSCALAR
-SM_FLAGS+=-DDOUBLE_FETCH
-endif
-
-ifeq ($(ENABLE_OOO),1)
-VFLAGS+=-DOUT_OF_ORDER
-SM_FLAGS+=-DOOO
 endif
 
 
@@ -105,8 +76,8 @@ ${VERILATOR_DIR}/configure : ${VERILATOR_TAR_PATH}
 	tar ${VERILATOR_UNTAR_OPTIONS} ${VERILATOR_TAR_PATH} -C ${VERILATOR_REL_PATH}
 	touch ${VERILATOR_DIR}/configure
 
-${VERILATOR_TAR_PATH} : 
-	wget ${VERILATOR_TAR_URL} -O ${VERILATOR_TAR_PATH}
+${VERILATOR_TAR_PATH} :
+	wget ${VERILATOR_TAR_URL} -O ${VERILATOR_TAR_PATH} --no-check-certificate
 
 .INTERMEDIATE : ece401-tests.tar.xz ${VERILATOR_TAR_PATH}
 
