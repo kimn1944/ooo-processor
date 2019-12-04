@@ -51,10 +51,7 @@ module MEM(
 	 output reg [1:0] data_write_size_2DM,
     input [31:0] data_read_fDM,
 	 output MemRead_2DM,
-	 output MemWrite_2DM,
-	//********************************************************************
-     input stall_IC
-    //********************************************************************
+	 output MemWrite_2DM
 
 `ifdef HAS_FORWARDING
     ,
@@ -295,7 +292,7 @@ always @(posedge CLK or negedge RESET) begin
 		RegWrite1_OUT <= 0;
 		WriteData1_OUT <= 0;
 		$display("MEM:RESET");
-	end else if(CLK & !stall_IC) begin
+	end else if(CLK) begin
 			Instr1_OUT <= Instr1_IN;
 			Instr1_PC_OUT <= Instr1_PC_IN;
 			WriteRegister1_OUT <= WriteRegister1_IN;

@@ -59,7 +59,7 @@ module ID(
      //we'll be writing to a register... passed to EXE
     output reg RegWrite1_OUT,
     //ALU control passed to EXE
-    output reg [5:0]ALU_Control1_OUT, 
+    output reg [5:0]ALU_Control1_OUT,
     //This is a memory read (passed to EXE)
     output reg MemRead1_OUT,
     //This is a memory write (passed to EXE)
@@ -78,10 +78,7 @@ module ID(
     input [31:0]    BypassData1_MEMID,
     input               BypassValid1_MEMID,
 `endif
-	//********************************************************************
-     input stall_IC,
-	 output sys_EXE,
-    //********************************************************************
+	 
 	 //Tell the simulator to process a system call
 	 output reg SYS,
 	 //Tell fetch to stop advancing the PC, and wait.
@@ -128,9 +125,7 @@ module ID(
      wire [15:0]    immediate1;
 
 	reg [2:0]	syscall_bubble_counter;
-	//********************************************************************
-	 //wire sys_EXE;
-    //********************************************************************
+	
 	 
 	 
      assign rs1 = Instr1_IN[25:21];
@@ -298,7 +293,7 @@ always @(posedge CLK or negedge RESET) begin
 		FORCE_FREEZE <= 0;
 		INHIBIT_FREEZE <= 0;
 	$display("ID:RESET");
-	end else if (!stall_IC) begin
+	end else begin
             Alt_PC <= Alt_PC1;
             Request_Alt_PC <= Request_Alt_PC1;
 			//$display("ID:evaluation SBC=%d; syscal1=%d",syscall_bubble_counter,syscal1);
@@ -345,9 +340,6 @@ always @(posedge CLK or negedge RESET) begin
 					MemRead1_OUT <= 0;
 					MemWrite1_OUT <= 0;
 					ShiftAmount1_OUT <= 0;
-					//********************************************************************
-					sys_EXE <= syscal1;
-					//********************************************************************
 					end
 				10,
 				0: begin
@@ -365,9 +357,6 @@ always @(posedge CLK or negedge RESET) begin
                     MemWrite1_OUT <= MemWrite1;
                     ShiftAmount1_OUT <= shiftAmount1;
                     Instr1_PC_OUT <= Instr_PC_IN;
-					//********************************************************************
-					sys_EXE <= syscal1;
-					//********************************************************************
 					end
 			endcase
 			/*if (RegWrite_IN) begin
@@ -379,9 +368,6 @@ always @(posedge CLK or negedge RESET) begin
                 //$display("ID1:A:Reg[%d]=%x; B:Reg[%d]=%x; Write?%d to %d",RegA1, OpA1, RegB1, OpB1, (WriteRegister1!=5'd0)?RegWrite1:1'd0, WriteRegister1);
                 //$display("ID1:ALU_Control=%x; MemRead=%d; MemWrite=%d (%x); ShiftAmount=%d",ALU_control1, MemRead1, MemWrite1, MemWriteData1, shiftAmount1);
 			end
-	end else begin
-		$display("ID1: D_stall Instr=%x,Instr_PC=%x,Req_Alt_PC=%d:Alt_PC=%x;SYS=%d(%d)",Instr1_IN,Instr_PC_IN,Request_Alt_PC1,Alt_PC1,SYS,syscall_bubble_counter);
-		SYS <= 0;
 	end
 end
 	

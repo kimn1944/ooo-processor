@@ -68,12 +68,7 @@ module EXE(
     //We need to read from MEM (passed to MEM)
     output reg MemRead1_OUT,
     //We need to write to MEM (passed to MEM)
-    output reg MemWrite1_OUT,
-	//********************************************************************
-     input stall_IC,
-	 input sys_EXE,
-	 output sys_DC
-    //********************************************************************
+    output reg MemWrite1_OUT
     
 `ifdef HAS_FORWARDING
     ,
@@ -187,7 +182,7 @@ always @(posedge CLK or negedge RESET) begin
 		MemRead1_OUT <= 0;
 		MemWrite1_OUT <= 0;
 		$display("EXE:RESET");
-	end else if(CLK & !stall_IC) begin
+	end else if(CLK) begin
        HI <= new_HI;
        LO <= new_LO;
             Instr1_OUT <= Instr1_IN;
@@ -199,9 +194,6 @@ always @(posedge CLK or negedge RESET) begin
             ALU_Control1_OUT <= ALU_Control1_IN;
             MemRead1_OUT <= MemRead1_IN;
             MemWrite1_OUT <= MemWrite1_IN;
-			//********************************************************************
-			sys_DC <= sys_EXE;
-			//********************************************************************
 			if(comment1) begin
                 $display("EXE:Instr1=%x,Instr1_PC=%x,ALU_result1=%x; Write?%d to %d",Instr1_IN,Instr1_PC_IN,ALU_result1, RegWrite1_IN, WriteRegister1_IN);
                 //$display("EXE:ALU_Control1=%x; MemRead1=%d; MemWrite1=%d (Data:%x)",ALU_Control1_IN, MemRead1_IN, MemWrite1_IN, MemWriteData1);
