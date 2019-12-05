@@ -1,5 +1,5 @@
 /*
-* File: TABLE.v
+* File: TABLE_obj.v
 * Author: Nikita Kim & Celine Wang
 * Email: kimn1944@gmail.com
 * Date: 12/3/19
@@ -7,8 +7,9 @@
 
 `include "config.v"
 
-module TABLE
-    #(parameter temp = 1)
+module TABLE_obj
+    #(parameter temp = 1,
+      parameter tag = "Table")
     (input clk,
       input reset,
       input stall,
@@ -31,7 +32,7 @@ module TABLE
       output [5:0] my_map [31:0]);
 
     integer i;
-    reg [5:0] arr [31:0];
+    reg [5:0] arr [31:0]/*verilator public*/;
 
     always @ * begin
         MapA <= arr[RegA];
@@ -54,6 +55,13 @@ module TABLE
                 arr[reg_to_map] <= remap ? new_mapping : arr[reg_to_map];
             end
         end
+        `ifdef TABLE
+            $display("%s", tag);
+            $display("Reg to remap: %x, New mapping: %x", reg_to_map, new_mapping);
+            $display("Remap: %x, Overwrite: %x", remap, overwrite);
+            $display("Arr[0]: %d", arr[0]);
+            $display("End %s", tag);
+        `endif
     end
 
 endmodule

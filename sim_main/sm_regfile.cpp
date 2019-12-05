@@ -14,7 +14,7 @@
 		#ifdef REMAP
 				static VMIPS_PHYS_REG* _RegFile = NULL;
 				static VMIPS_EXE* _EXE = NULL;
-				static VMIPS_TABLE* _FRAT = NULL;
+				static VMIPS_TABLE_obj* _FRAT = NULL;
 				void init_register_access(VMIPS_ID *id, VMIPS_EXE *exe) {
 						_RegFile = id->PHYS_REG;
 						_EXE = exe;
@@ -23,7 +23,6 @@
 				#define REG_FILE_VALID	(_RegFile && _EXE)
 				#define REG_ACCESS(regno) _RegFile->arr[_FRAT->arr[regno]]
 		#else
-				static VMIPS_TABLE* _RRAT = NULL;
 				static VMIPS_RegFile* _RegFile = NULL;
 				static VMIPS_EXE* _EXE = NULL;
 				void init_register_access(VMIPS_RegFile *rf, VMIPS_EXE *exe) {

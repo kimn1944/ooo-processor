@@ -7,23 +7,23 @@
 
 #ifndef SM_REGFILE_H_
 #define SM_REGFILE_H_
-
+#include "my_def.h"
 #include <stdint.h>
 #ifndef OOO
     #ifdef REMAP
-        #include "VMIPS_ID.h"
-        #include "VMIPS_TABLE.h"
+        #include "VMIPS_TABLE_obj.h"
         #include "VMIPS_PHYS_REG.h"
+        #include "VMIPS_ID.h"
+    #else
+        #include "VMIPS_RegFile.h"
     #endif
-#include "VMIPS_TABLE.h"
-#include "VMIPS_RegFile.h"
-#include "VMIPS_EXE.h"
+    #include "VMIPS_EXE.h"
 #else
 #include "VMIPS_PhysRegFile.h"
 #include "VMIPS_RetireCommit.h"
 #endif
 
-#include "my_def.h"
+
 
 #ifndef OOO
     #ifdef REMAP

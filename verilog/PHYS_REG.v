@@ -22,11 +22,11 @@ module PHYS_REG
       output [31:0] ValC,
 
       input [5:0] reg_to_update,
-      input [32:0] new_value,
+      input [31:0] new_value,
       input update);
 
       integer i;
-      reg [31:0] arr [63:0];
+      reg [31:0] arr [63:0]/*verilator public*/;
 
       always @ * begin
           ValA <= arr[A];

@@ -289,25 +289,25 @@ wire [5:0] mapA;
 wire [5:0] mapB;
 wire [5:0] mapC;
 
-// `ifdef REMAP
-//     TABLE #(.temp(1)) FRAT
-//         (.clk(CLK),
-//         .reset(RESET),
-//         .stall(STALL),
-//         .RegA(rs1),
-//         .RegB(rt1),
-//         .RegC(WriteRegister1),
-//         .MapA(mapA),
-//         .MapB(mapB),
-//         .MapC(mapC),
-//         .reg_to_map(0),
-//         .new_mapping(0),
-//         .remap(0),
-//         .new_map(R_F),
-//         .overwrite(0),
-//         .my_map(F_R));
-//
-    TABLE #(.temp(0)) RRAT
+`ifdef REMAP
+    TABLE_obj #(.temp(1)) FRAT
+        (.clk(CLK),
+        .reset(RESET),
+        .stall(STALL),
+        .RegA(rs1),
+        .RegB(rt1),
+        .RegC(WriteRegister1),
+        .MapA(mapA),
+        .MapB(mapB),
+        .MapC(mapC),
+        .reg_to_map(0),
+        .new_mapping(0),
+        .remap(0),
+        .new_map(R_F),
+        .overwrite(SYS),
+        .my_map(F_R));
+
+    TABLE_obj #(.temp(0)) RRAT
         (.clk(CLK),
         .reset(RESET),
         .stall(STALL),
@@ -319,25 +319,25 @@ wire [5:0] mapC;
         .MapC(),
         .reg_to_map(0),
         .new_mapping(0),
-        .remap(0),
+        .remap(),
         .new_map(F_R),
         .overwrite(0),
         .my_map(R_F));
-//
-//     PHYS_REG #() PHYS_REG
-//         (.clk(CLK),
-//         .reset(RESET),
-//         .stall(STALL),
-//         .A(mapA),
-//         .B(mapB),
-//         .C(mapC),
-//         .ValA(rsRawVal1),
-//         .ValB(rtRawVal1),
-//         .ValC(WriteRegisterRawVal1),
-//         .reg_to_update(F_R[WriteRegister1_IN]),
-//         .new_value(WriteData1_IN),
-//         .update(RegWrite1_IN));
-// `else
+
+    PHYS_REG #() PHYS_REG
+        (.clk(CLK),
+        .reset(RESET),
+        .stall(STALL),
+        .A(mapA),
+        .B(mapB),
+        .C(mapC),
+        .ValA(rsRawVal1),
+        .ValB(rtRawVal1),
+        .ValC(WriteRegisterRawVal1),
+        .reg_to_update(F_R[WriteRegister1_IN]),
+        .new_value(WriteData1_IN),
+        .update(RegWrite1_IN));
+`else
     RegFile RegFile (
         .CLK(CLK),
         .RESET(RESET),
@@ -351,7 +351,7 @@ wire [5:0] mapC;
         .WriteData1(WriteData1_IN),
         .Write1(RegWrite1_IN)
         );
-// `endif
+`endif
 //******************************************************************************
 
 	 reg FORCE_FREEZE;
