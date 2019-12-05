@@ -139,26 +139,32 @@ module MIPS (
 `endif
 
     wire halt;
-    wire [63:0] deque_data;
-
-    QUEUE_obj #(.LENGTH(8), .WIDTH(64)) QUEUE
-        (.clk(CLK),
-        .reset(RESET),
-        .stall(STALL_IDIF),
-        .flush(Request_Alt_PC_IDIF),
-        .enque(1),
-        .enque_data({Instr_PC_IFID, Instr1_IFID}),
-        .deque(1),
-        .deque_data(deque_data),
-        .halt(halt));
+    // wire [63:0] deque_data;
+    //
+    // QUEUE_obj #(.LENGTH(8), .WIDTH(64)) QUEUE
+    //     (.clk(CLK),
+    //     .reset(RESET),
+    //     .stall(STALL_IDIF),
+    //     .flush(Request_Alt_PC_IDIF),
+    //     .enque(1),
+    //     .enque_data({Instr_PC_IFID, Instr1_IFID}),
+    //     .deque(1),
+    //     .deque_data(deque_data),
+    //     .halt(halt));
 
 
 	ID ID(
 		.CLK(CLK),
 		.RESET(RESET),
-		.Instr1_IN(deque_data[31:0]),
-		.Instr_PC_IN(deque_data[63:32]),
-		.Instr_PC_Plus4_IN(deque_data[63:32] + 32'd4),
+//******************************************************************************
+		// .Instr1_IN(deque_data[31:0]),
+		// .Instr_PC_IN(deque_data[63:32]),
+		// .Instr_PC_Plus4_IN(deque_data[63:32] + 32'd4),
+    .instr1_in(Instr1_IFID),
+    .instr_pc_in(Instr_PC_IFID),
+    .instr_pc_plus4_in(Instr_PC_IFID + 32'd4),
+    .halt(halt),
+//******************************************************************************
 		.WriteRegister1_IN(WriteRegister1_MEMWB),
 		.WriteData1_IN(WriteData1_MEMWB),
 		.RegWrite1_IN(RegWrite1_MEMWB),

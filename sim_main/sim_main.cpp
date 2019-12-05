@@ -59,6 +59,9 @@
 #include "sm_execinfo.h"
 #include "sm_elfload.h"
 #include "sm_regfile.h"
+//******************************************************************************
+#include "my_def.h"
+//******************************************************************************
 /*
  * MIPS syscall definitions can be found here
 #include "asm/sgidefs.h"
@@ -535,7 +538,13 @@ int main(int argc, char **argv)
 	seconds  = time (NULL);
 
 #ifndef OOO
-	init_register_access(top->v->ID->RegFile, top->v->EXE);
+//******************************************************************************
+		#ifdef REMAP
+				init_register_access(top->v->ID, top->v->EXE);
+		#else
+				init_register_access(top->v->ID->RegFile, top->v->EXE);
+		#endif
+//******************************************************************************
 #else
 	init_register_access(top->v->RegRead->PhysRegFile, top->v->RetireCommit);
 #endif

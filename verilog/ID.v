@@ -1,45 +1,53 @@
 `include "config.v"
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    21:49:08 10/16/2013 
-// Design Name: 
-// Module Name:    ID2 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
+// Company:
+// Engineer:
 //
-// Dependencies: 
+// Create Date:    21:49:08 10/16/2013
+// Design Name:
+// Module Name:    ID2
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
 //
-// Revision: 
+// Dependencies:
+//
+// Revision:
 // Revision 0.01 - File Created
-// Additional Comments: 
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module ID(
     input CLK,
     input RESET,
-	 //Instruction from Fetch
-    input[31:0]Instr1_IN,
-	 //PC of instruction fetched
-    input[31:0]Instr_PC_IN,
-    //PC+4 of instruction fetched (needed for various things)
-    input[31:0]Instr_PC_Plus4_IN,
-    
+//******************************************************************************
+	 // //Instruction from Fetch
+   //  input[31:0]Instr1_IN,
+	 // //PC of instruction fetched
+   //  input[31:0]Instr_PC_IN,
+   //  //PC+4 of instruction fetched (needed for various things)
+   //  input[31:0]Instr_PC_Plus4_IN,
+
+   input [31:0] instr1_in,
+   input [31:0] instr_pc_in,
+   input [31:0] instr_pc_plus4_in,
+
+   output halt,
+//******************************************************************************
+
     //Writeback stage [register to write]
 	 input[4:0]WriteRegister1_IN,
 	 //Data to write to register file
 	 input[31:0]WriteData1_IN,
 	 //Actually write to register file?
 	 input RegWrite1_IN,
-	 
+
 	 //Alternate PC for next fetch (branch/jump destination)
     output reg [31:0]Alt_PC,
     //Actually use alternate PC
     output reg Request_Alt_PC,
-    
+
     //Instruction being passed to EXE [debug]
      output reg [31:0]Instr1_OUT,
     //PC of instruction being passed to EXE [debug]
@@ -66,25 +74,46 @@ module ID(
     output reg MemWrite1_OUT,
     //Shift amount [for ALU functions] (passed to EXE)
     output reg [4:0]ShiftAmount1_OUT,
-    
+
 `ifdef HAS_FORWARDING
     //Bypass inputs for calculations that have completed EXE
     input [4:0]     BypassReg1_EXEID,
     input [31:0]    BypassData1_EXEID,
     input               BypassValid1_EXEID,
-	
+
     //Bypass inputs for loads from memory (and previous-instruction EXE outputs)
     input [4:0]     BypassReg1_MEMID,
     input [31:0]    BypassData1_MEMID,
     input               BypassValid1_MEMID,
 `endif
-	 
+
 	 //Tell the simulator to process a system call
 	 output reg SYS,
 	 //Tell fetch to stop advancing the PC, and wait.
 	 output WANT_FREEZE
     );
-	 
+
+//******************************************************************************
+wire [31:0] Instr1_IN;
+wire [31:0] Instr_PC_IN;
+wire [31:0] Instr_PC_Plus4_IN;
+wire [63:0] deque_data;
+
+assign Instr1_IN         = deque_data[31:0];
+assign Instr_PC_IN       = deque_data[63:32];
+assign Instr_PC_Plus4_IN = deque_data[63:32] + 32'd4;
+
+    QUEUE_obj #(.LENGTH(8), .WIDTH(64)) decode_queue
+    (.clk(CLK),
+    .reset(RESET),
+    .stall(WANT_FREEZE),
+    .flush(Request_Alt_PC),
+    .enque(1),
+    .enque_data({instr_pc_in, instr1_in}),
+    .deque(1),
+    .deque_data(deque_data),
+    .halt(halt));
+//******************************************************************************
 	 wire [5:0]	ALU_control1;	//async. ALU_Control output
 	 wire			link1;			//whether this is a "And Link" instruction
 	 wire			RegDst1;			//whether this instruction uses the "rd" register (Instr[15:11])
@@ -102,10 +131,10 @@ module ID(
 	 wire			syscal1;			//If this instruction is a syscall
 	 wire			comment1;
 	 assign		comment1 = 1;
-	 
+
 	 wire			Request_Alt_PC1;	//Do we want to branch/jump?
 	 wire	[31:0]	Alt_PC1;	//address to which we branch/jump
-	 
+
 	 wire [4:0]		RegA1;		//Register A
 	 wire [4:0]		RegB1;		//Register B
 	 wire [4:0]		WriteRegister1;	//Register to write
@@ -113,7 +142,7 @@ module ID(
 	 wire [31:0]	MemWriteData1;		//Data to write to memory
 	 wire	[31:0]	OpA1;		//Operand A
 	 wire [31:0]	OpB1;		//Operand B
-	 
+
      wire [4:0]     rs1;     //also format1
      wire [31:0]    rsRawVal1;
      wire   [31:0]  rsval1;
@@ -125,9 +154,9 @@ module ID(
      wire [15:0]    immediate1;
 
 	reg [2:0]	syscall_bubble_counter;
-	
-	 
-	 
+
+
+
      assign rs1 = Instr1_IN[25:21];
      assign rt1 = Instr1_IN[20:16];
      assign rd1 = Instr1_IN[15:11];
@@ -135,20 +164,20 @@ module ID(
      assign immediate1 = Instr1_IN[15:0];
 
 //Begin branch/jump calculation
-	
+
 	wire [31:0] rsval_jump1;
-	
+
 `ifdef HAS_FORWARDING
 RegValue3 RegJumpValue1 (
-    .ReadRegister1(rs1), 
-    .RegisterData1(rsRawVal1), 
-    .WriteRegister1stPri1(BypassReg1_EXEID), 
+    .ReadRegister1(rs1),
+    .RegisterData1(rsRawVal1),
+    .WriteRegister1stPri1(BypassReg1_EXEID),
     .WriteData1stPri1(BypassData1_EXEID),
 	 .Valid1stPri1(BypassValid1_EXEID),
-    .WriteRegister2ndPri1(BypassReg1_MEMID), 
+    .WriteRegister2ndPri1(BypassReg1_MEMID),
     .WriteData2ndPri1(BypassData1_MEMID),
 	 .Valid2ndPri1(BypassValid1_MEMID),
-    .WriteRegister3rdPri1(WriteRegister1_IN), 
+    .WriteRegister3rdPri1(WriteRegister1_IN),
     .WriteData3rdPri1(WriteData1_IN),
 	 .Valid3rdPri1(RegWrite1_IN),
     .Output1(rsval_jump1),
@@ -160,25 +189,25 @@ RegValue3 RegJumpValue1 (
 
 NextInstructionCalculator NIA1 (
     .Instr_PC_Plus4(Instr_PC_Plus4_IN),
-    .Instruction(Instr1_IN), 
-    .Jump(jump1), 
-    .JumpRegister(jumpRegister_Flag1), 
-    .RegisterValue(rsval_jump1), 
+    .Instruction(Instr1_IN),
+    .Jump(jump1),
+    .JumpRegister(jumpRegister_Flag1),
+    .RegisterValue(rsval_jump1),
     .NextInstructionAddress(Alt_PC1),
 	 .Register(rs1)
     );
 
      wire [31:0]    signExtended_immediate1;
      wire [31:0]    zeroExtended_immediate1;
-     
+
      assign signExtended_immediate1 = {{16{immediate1[15]}},immediate1};
      assign zeroExtended_immediate1 = {{16{1'b0}},immediate1};
 
 compare branch_compare1 (
-    .Jump(jump1), 
+    .Jump(jump1),
     .OpA(OpA1),
     .OpB(OpB1),
-    .Instr_input(Instr1_IN), 
+    .Instr_input(Instr1_IN),
     .taken(Request_Alt_PC1)
     );
 //End branch/jump calculation
@@ -186,30 +215,30 @@ compare branch_compare1 (
 //Handle pipelining
 `ifdef HAS_FORWARDING
 RegValue3 RegAValue1 (
-    .ReadRegister1(rs1), 
-    .RegisterData1(rsRawVal1), 
-    .WriteRegister1stPri1(BypassReg1_EXEID), 
+    .ReadRegister1(rs1),
+    .RegisterData1(rsRawVal1),
+    .WriteRegister1stPri1(BypassReg1_EXEID),
     .WriteData1stPri1(BypassData1_EXEID),
 	 .Valid1stPri1(BypassValid1_EXEID),
-    .WriteRegister2ndPri1(BypassReg1_MEMID), 
+    .WriteRegister2ndPri1(BypassReg1_MEMID),
     .WriteData2ndPri1(BypassData1_MEMID),
 	 .Valid2ndPri1(BypassValid1_MEMID),
-    .WriteRegister3rdPri1(WriteRegister1_IN), 
+    .WriteRegister3rdPri1(WriteRegister1_IN),
     .WriteData3rdPri1(WriteData1_IN),
 	 .Valid3rdPri1(RegWrite1_IN),
     .Output1(rsval1),
 	 .comment(1'b0)
     );
 RegValue3 RegBValue1 (
-    .ReadRegister1(rt1), 
-    .RegisterData1(rtRawVal1), 
-    .WriteRegister1stPri1(BypassReg1_EXEID), 
+    .ReadRegister1(rt1),
+    .RegisterData1(rtRawVal1),
+    .WriteRegister1stPri1(BypassReg1_EXEID),
     .WriteData1stPri1(BypassData1_EXEID),
      .Valid1stPri1(BypassValid1_EXEID),
-    .WriteRegister2ndPri1(BypassReg1_MEMID), 
+    .WriteRegister2ndPri1(BypassReg1_MEMID),
     .WriteData2ndPri1(BypassData1_MEMID),
      .Valid2ndPri1(BypassValid1_MEMID),
-    .WriteRegister3rdPri1(WriteRegister1_IN), 
+    .WriteRegister3rdPri1(WriteRegister1_IN),
     .WriteData3rdPri1(WriteData1_IN),
      .Valid3rdPri1(RegWrite1_IN),
     .Output1(rtval1),
@@ -225,15 +254,15 @@ assign rtval1 = rtRawVal1;
 	//assign MemWriteData1 = Reg[WriteRegister1];		//What will be written by MEM
 `ifdef HAS_FORWARDING
 RegValue3 RegWriteValue1 (
-    .ReadRegister1(WriteRegister1), 
-    .RegisterData1(WriteRegisterRawVal1), 
-    .WriteRegister1stPri1(BypassReg1_EXEID), 
+    .ReadRegister1(WriteRegister1),
+    .RegisterData1(WriteRegisterRawVal1),
+    .WriteRegister1stPri1(BypassReg1_EXEID),
     .WriteData1stPri1(BypassData1_EXEID),
 	 .Valid1stPri1(BypassValid1_EXEID),
-    .WriteRegister2ndPri1(BypassReg1_MEMID), 
+    .WriteRegister2ndPri1(BypassReg1_MEMID),
     .WriteData2ndPri1(BypassData1_MEMID),
 	 .Valid2ndPri1(BypassValid1_MEMID),
-    .WriteRegister3rdPri1(WriteRegister1_IN), 
+    .WriteRegister3rdPri1(WriteRegister1_IN),
     .WriteData3rdPri1(WriteData1_IN),
 	 .Valid3rdPri1(RegWrite1_IN),
     .Output1(MemWriteData1),
@@ -251,26 +280,84 @@ RegValue3 RegWriteValue1 (
 	//if writeregister!=rd, then writeregister ==rt, and we use immediate instead.
 	assign OpB1 = branch1?(link1?(Instr_PC_Plus4_IN+4):rtval1):(RegDst1?rtval1:(sign_or_zero_Flag1?signExtended_immediate1:zeroExtended_immediate1));
 	assign RegB1 = RegDst1?rt1:5'd0;
-	
 
-RegFile RegFile (
-    .CLK(CLK), 
-    .RESET(RESET), 
-    .RegA1(rs1),
-    .RegB1(rt1),
-    .RegC1(WriteRegister1), 
-    .DataA1(rsRawVal1),
-    .DataB1(rtRawVal1),
-    .DataC1(WriteRegisterRawVal1),
-    .WriteReg1(WriteRegister1_IN),
-    .WriteData1(WriteData1_IN),
-    .Write1(RegWrite1_IN)
-    );
-	 
+//******************************************************************************
+wire [5:0] F_R [31:0];
+wire [5:0] R_F [31:0];
+
+wire [5:0] mapA;
+wire [5:0] mapB;
+wire [5:0] mapC;
+
+// `ifdef REMAP
+//     TABLE #(.temp(1)) FRAT
+//         (.clk(CLK),
+//         .reset(RESET),
+//         .stall(STALL),
+//         .RegA(rs1),
+//         .RegB(rt1),
+//         .RegC(WriteRegister1),
+//         .MapA(mapA),
+//         .MapB(mapB),
+//         .MapC(mapC),
+//         .reg_to_map(0),
+//         .new_mapping(0),
+//         .remap(0),
+//         .new_map(R_F),
+//         .overwrite(0),
+//         .my_map(F_R));
+//
+    TABLE #(.temp(0)) RRAT
+        (.clk(CLK),
+        .reset(RESET),
+        .stall(STALL),
+        .RegA(0),
+        .RegB(0),
+        .RegC(0),
+        .MapA(),
+        .MapB(),
+        .MapC(),
+        .reg_to_map(0),
+        .new_mapping(0),
+        .remap(0),
+        .new_map(F_R),
+        .overwrite(0),
+        .my_map(R_F));
+//
+//     PHYS_REG #() PHYS_REG
+//         (.clk(CLK),
+//         .reset(RESET),
+//         .stall(STALL),
+//         .A(mapA),
+//         .B(mapB),
+//         .C(mapC),
+//         .ValA(rsRawVal1),
+//         .ValB(rtRawVal1),
+//         .ValC(WriteRegisterRawVal1),
+//         .reg_to_update(F_R[WriteRegister1_IN]),
+//         .new_value(WriteData1_IN),
+//         .update(RegWrite1_IN));
+// `else
+    RegFile RegFile (
+        .CLK(CLK),
+        .RESET(RESET),
+        .RegA1(rs1),
+        .RegB1(rt1),
+        .RegC1(WriteRegister1),
+        .DataA1(rsRawVal1),
+        .DataB1(rtRawVal1),
+        .DataC1(WriteRegisterRawVal1),
+        .WriteReg1(WriteRegister1_IN),
+        .WriteData1(WriteData1_IN),
+        .Write1(RegWrite1_IN)
+        );
+// `endif
+//******************************************************************************
+
 	 reg FORCE_FREEZE;
 	 reg INHIBIT_FREEZE;
      assign WANT_FREEZE = ((FORCE_FREEZE | syscal1) && !INHIBIT_FREEZE);
-	 
+
 always @(posedge CLK or negedge RESET) begin
 	if(!RESET) begin
 		Alt_PC <= 0;
@@ -370,24 +457,24 @@ always @(posedge CLK or negedge RESET) begin
 			end
 	end
 end
-	
+
     Decoder #(
     .TAG("1")
     )
     Decoder1 (
-    .Instr(Instr1_IN), 
-    .Instr_PC(Instr_PC_IN), 
-    .Link(link1), 
-    .RegDest(RegDst1), 
-    .Jump(jump1), 
-    .Branch(branch1), 
-    .MemRead(MemRead1), 
-    .MemWrite(MemWrite1), 
-    .ALUSrc(ALUSrc1), 
-    .RegWrite(RegWrite1), 
-    .JumpRegister(jumpRegister_Flag1), 
-    .SignOrZero(sign_or_zero_Flag1), 
-    .Syscall(syscal1), 
+    .Instr(Instr1_IN),
+    .Instr_PC(Instr_PC_IN),
+    .Link(link1),
+    .RegDest(RegDst1),
+    .Jump(jump1),
+    .Branch(branch1),
+    .MemRead(MemRead1),
+    .MemWrite(MemWrite1),
+    .ALUSrc(ALUSrc1),
+    .RegWrite(RegWrite1),
+    .JumpRegister(jumpRegister_Flag1),
+    .SignOrZero(sign_or_zero_Flag1),
+    .Syscall(syscal1),
     .ALUControl(ALU_control1),
 /* verilator lint_off PINCONNECTEMPTY */
     .MultRegAccess(),   //Needed for out-of-order

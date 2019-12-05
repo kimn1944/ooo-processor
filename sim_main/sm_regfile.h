@@ -10,6 +10,12 @@
 
 #include <stdint.h>
 #ifndef OOO
+    #ifdef REMAP
+        #include "VMIPS_ID.h"
+        #include "VMIPS_TABLE.h"
+        #include "VMIPS_PHYS_REG.h"
+    #endif
+#include "VMIPS_TABLE.h"
 #include "VMIPS_RegFile.h"
 #include "VMIPS_EXE.h"
 #else
@@ -17,8 +23,15 @@
 #include "VMIPS_RetireCommit.h"
 #endif
 
+#include "my_def.h"
+
 #ifndef OOO
-void init_register_access(VMIPS_RegFile *rf, VMIPS_EXE *exe);
+    #ifdef REMAP
+        void init_register_access(VMIPS_ID *id, VMIPS_EXE *exe);
+    #else
+        void init_register_access(VMIPS_RegFile *rf, VMIPS_EXE *exe);
+    #endif
+
 #else
 void init_register_access(VMIPS_PhysRegFile *prf, VMIPS_RetireCommit *rc);
 #endif

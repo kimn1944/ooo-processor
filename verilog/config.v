@@ -22,3 +22,4 @@
 //`define OUT_OF_ORDER
 
 `define QUEUE
+`define REMAP

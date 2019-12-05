@@ -1,6 +1,6 @@
 /*
-* File: Queue.v
-* Author: Nikita Kim
+* File: QUEUE_obj.v
+* Author: Nikita Kim & Celine Wang
 * Email: kimn1944@gmail.com
 * Date: 12/3/19
 */
@@ -65,7 +65,7 @@ module QUEUE_obj
             $display("Queue");
             $display("Queue: %x, Size: %d, Head: %d, Tail: %d", queue[0], size, head, tail);
             $display("Enq Data[%x]: %x, Deq Data[%x]: %x", enque, enque_data, deque, deque_data);
-            $display("Stall: %x, Halt: %x, Flush: %x", stall, halt, flush);
+            $display("Stall: %x, Halt: %x, Flush: %x, Reset: %x", stall, halt, flush, ~reset);
             $display("END Queue");
         `endif
     end
