@@ -29,16 +29,14 @@ module QUEUE_obj
     integer size;
     reg [WIDTH - 1:0] queue [LENGTH - 1:0];
 
-    always @ * begin
-        halt <= (size == LENGTH);
-    end
+    assign halt = (size == LENGTH);
+    assign deque_data = (deque & ~stall & (size > 0)) ? queue[head] : 0;
 
     always @(posedge clk or negedge reset) begin
         if(!reset) begin
             for(i = 0; i < LENGTH; i = i + 1) begin
                 queue[i] = 0;
             end
-            deque_data <= 0;
             head <= 0;
             tail <= 0;
             size <= 0;
@@ -47,13 +45,11 @@ module QUEUE_obj
             for(i = 0; i < LENGTH; i = i + 1) begin
                 queue[i] = 0;
             end
-            deque_data <= 0;
             head <= 0;
             tail <= 0;
             size <= 0;
         end
         else if(clk) begin
-            deque_data <= (deque & ~stall & (size > 0)) ? queue[head] : 0;
             head       <= (deque & ~stall & (size > 0)) ? ((head < LENGTH - 1) ? head + 1 : 0) : head;
 
             queue[tail] <= (enque & ~halt & (size < LENGTH)) ? enque_data : queue[tail];

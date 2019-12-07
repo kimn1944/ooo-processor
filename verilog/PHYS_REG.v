@@ -13,26 +13,16 @@ module PHYS_REG
       input reset,
       input stall,
 
-      input [5:0] A,
-      input [5:0] B,
-      input [5:0] C,
-
-      output [31:0] ValA,
-      output [31:0] ValB,
-      output [31:0] ValC,
-
       input [5:0] reg_to_update,
       input [31:0] new_value,
-      input update);
+      input update,
+
+      output [31:0] regs [63:0]);
 
       integer i;
       reg [31:0] arr [63:0]/*verilator public*/;
 
-      always @ * begin
-          ValA <= arr[A];
-          ValB <= arr[B];
-          ValC <= arr[C];
-      end
+      assign regs = arr;
 
       always @(posedge clk or negedge reset) begin
           if(!reset) begin

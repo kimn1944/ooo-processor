@@ -130,19 +130,19 @@ wire [63:0] deque_data;
     wire [4:0] rd;
     wire [63:0] instr_info;
     wire [14:0] regs;
-    wire controls;
-    wire [79:0] rename_entry;
-    wire [79:0] rename_out;
+    wire [6:0] controls;
+    wire [85:0] rename_entry;
+    wire [85:0] rename_out;
 
     assign rs = link ? 5'b00000 : deque_data[31:0][25:21];
     assign rt = rgdst ? deque_data[31:0][20:16] : 5'd0;
     assign rd = rgdst ? deque_data[31:0][15:11] : deque_data[31:0][20:16];
     assign instr_info = {deque_data[63:32], deque_data[31:0]};
     assign regs = {rs, rt, rd};
-    assign controls = rgwrt;
+    assign controls = {rgwrt, memrd, memwrt, {hilo, hilowrt}, sys};
     assign rename_entry = {instr_info, regs, controls};
 
-    QUEUE_obj #(.LENGTH(8), .WIDTH(80), .TAG("Rename Queue")) rename_queue
+    QUEUE_obj #(.LENGTH(8), .WIDTH(86), .TAG("Rename Queue")) rename_queue
     (.clk(CLK),
     .reset(RESET),
     .stall(0),
@@ -153,14 +153,20 @@ wire [63:0] deque_data;
     .deque_data(rename_out),
     .halt(rename_halt));
 
-    assign Instr1_IN         = rename_out[47:16];
-    assign Instr_PC_IN       = rename_out[79:48];
-    assign Instr_PC_Plus4_IN = rename_out[79:48] + 32'd4;
+    assign Instr1_IN         = rename_out[53:22];
+    assign Instr_PC_IN       = rename_out[85:54];
+    assign Instr_PC_Plus4_IN = rename_out[85:54] + 32'd4;
 
     wire link;
     wire rgdst;
     wire rgwrt;
+    wire memrd;
+    wire memwrt;
+    wire [1:0] hilo;
+    wire hilowrt;
+    wire sys;
 
+    assign hilowrt = (deque_data[31:0][31:26] == 6'b000000) ? ((deque_data[31:0][5:0] == 6'b010001 || deque_data[31:0][5:0] == 6'b010011) ? 1 : 0) : 0;
     Decoder #(
     .TAG("2")
     )
@@ -171,16 +177,16 @@ wire [63:0] deque_data;
     .RegDest(rgdst),
     .Jump(),
     .Branch(),
-    .MemRead(),
-    .MemWrite(),
+    .MemRead(memrd),
+    .MemWrite(memwrt),
     .ALUSrc(),
     .RegWrite(rgwrt),
     .JumpRegister(),
     .SignOrZero(),
-    .Syscall(),
+    .Syscall(sys),
     .ALUControl(),
 /* verilator lint_off PINCONNECTEMPTY */
-    .MultRegAccess(),   //Needed for out-of-order
+    .MultRegAccess(hilo),   //Needed for out-of-order
 /* verilator lint_on PINCONNECTEMPTY */
      .comment1(0)
     );
@@ -355,22 +361,13 @@ RegValue3 RegWriteValue1 (
 //******************************************************************************
 wire [5:0] F_R [31:0];
 wire [5:0] R_F [31:0];
-
-wire [5:0] mapA;
-wire [5:0] mapB;
-wire [5:0] mapC;
+wire [31:0] REGS [63:0];
 
 `ifdef REMAP
-    TABLE_obj #(.temp(1)) FRAT
+    TABLE_obj #() FRAT
         (.clk(CLK),
         .reset(RESET),
         .stall(STALL),
-        .RegA(rs1),
-        .RegB(rt1),
-        .RegC(WriteRegister1),
-        .MapA(mapA),
-        .MapB(mapB),
-        .MapC(mapC),
         .reg_to_map(0),
         .new_mapping(0),
         .remap(0),
@@ -378,16 +375,10 @@ wire [5:0] mapC;
         .overwrite(0),
         .my_map(F_R));
 
-    TABLE_obj #(.temp(0)) RRAT
+    TABLE_obj #() RRAT
         (.clk(CLK),
         .reset(RESET),
         .stall(STALL),
-        .RegA(0),
-        .RegB(0),
-        .RegC(0),
-        .MapA(),
-        .MapB(),
-        .MapC(),
         .reg_to_map(0),
         .new_mapping(0),
         .remap(),
@@ -399,15 +390,14 @@ wire [5:0] mapC;
         (.clk(CLK),
         .reset(RESET),
         .stall(STALL),
-        .A(mapA),
-        .B(mapB),
-        .C(mapC),
-        .ValA(rsRawVal1),
-        .ValB(rtRawVal1),
-        .ValC(WriteRegisterRawVal1),
         .reg_to_update(F_R[WriteRegister1_IN]),
         .new_value(WriteData1_IN),
-        .update(RegWrite1_IN));
+        .update(RegWrite1_IN),
+        .regs(REGS));
+
+    assign rsRawVal1 = REGS[F_R[rs1]];
+    assign rtRawVal1 = REGS[F_R[rt1]];
+    assign WriteRegisterRawVal1 = REGS[F_R[WriteRegister1]];
 `else
     RegFile RegFile (
         .CLK(CLK),
@@ -422,6 +412,7 @@ wire [5:0] mapC;
         .WriteData1(WriteData1_IN),
         .Write1(RegWrite1_IN)
         );
+
 `endif
 //******************************************************************************
 
@@ -452,8 +443,8 @@ always @(posedge CLK or negedge RESET) begin
 		INHIBIT_FREEZE <= 0;
 	$display("ID:RESET");
 	end else begin
-            Alt_PC <= Alt_PC1;
-            Request_Alt_PC <= Request_Alt_PC1;
+      Alt_PC <= Alt_PC1;
+      Request_Alt_PC <= Request_Alt_PC1;
 			//$display("ID:evaluation SBC=%d; syscal1=%d",syscall_bubble_counter,syscal1);
 			case (syscall_bubble_counter)
 				5,4,3: begin
@@ -463,7 +454,7 @@ always @(posedge CLK or negedge RESET) begin
 				2: begin
 					//$display("ID:Decrement sbc, , send sys");
 					syscall_bubble_counter <= syscall_bubble_counter - 3'b1;
-					SYS <= (ALU_control1 != 6'b101000) && (ALU_control1 != 6'b110110);  //We do a flush on LL/SC, but don't need to tell sim_main.
+					SYS <= 1;  //We do a flush on LL/SC, but don't need to tell sim_main.
 					INHIBIT_FREEZE <=1;
 					end
 				1: begin
@@ -479,44 +470,22 @@ always @(posedge CLK or negedge RESET) begin
 			endcase
 			if(syscal1 && (syscall_bubble_counter==0)) begin
 				//$display("ID:init SBC");
-				syscall_bubble_counter <= 4;
+				syscall_bubble_counter <= 3'd4;
 			end
-			//$display("sc1,sbc=%d",{syscal1,syscall_bubble_counter});
-			case ({syscal1,syscall_bubble_counter})
-				8,13,12,11,
-				9,1: begin	//9 and 1 depend on multiple syscall in a row
-					//$display("ID:send nop");
-					Instr1_OUT <= (Instr1_IN==32'hc)?Instr1_IN:0; //We need to propagate the syscall to MEM to flush the cache!
-					OperandA1_OUT <= 0;
-					OperandB1_OUT <= 0;
-					ReadRegisterA1_OUT <= 0;
-					ReadRegisterB1_OUT <= 0;
-					WriteRegister1_OUT <= 0;
-					MemWriteData1_OUT <= 0;
-					RegWrite1_OUT <= 0;
-					ALU_Control1_OUT <= (Instr1_IN==32'hc)?ALU_control1:0;
-					MemRead1_OUT <= 0;
-					MemWrite1_OUT <= 0;
-					ShiftAmount1_OUT <= 0;
-					end
-				10,
-				0: begin
 					//$display("ID: send instr");
-                    Instr1_OUT <= Instr1_IN;
-                    OperandA1_OUT <= OpA1;
-                    OperandB1_OUT <= OpB1;
-                    ReadRegisterA1_OUT <= RegA1;
-                    ReadRegisterB1_OUT <= RegB1;
-                    WriteRegister1_OUT <= WriteRegister1;
-                    MemWriteData1_OUT <= MemWriteData1;
-                    RegWrite1_OUT <= (WriteRegister1 != 5'd0) ? RegWrite1 : 1'd0;
-                    ALU_Control1_OUT <= ALU_control1;
-                    MemRead1_OUT <= MemRead1;
-                    MemWrite1_OUT <= MemWrite1;
-                    ShiftAmount1_OUT <= shiftAmount1;
-                    Instr1_PC_OUT <= Instr_PC_IN;
-					end
-			endcase
+      Instr1_OUT <= Instr1_IN;
+      OperandA1_OUT <= OpA1;
+      OperandB1_OUT <= OpB1;
+      ReadRegisterA1_OUT <= RegA1;
+      ReadRegisterB1_OUT <= RegB1;
+      WriteRegister1_OUT <= WriteRegister1;
+      MemWriteData1_OUT <= MemWriteData1;
+      RegWrite1_OUT <= (WriteRegister1 != 5'd0) ? RegWrite1 : 1'd0;
+      ALU_Control1_OUT <= ALU_control1;
+      MemRead1_OUT <= MemRead1;
+      MemWrite1_OUT <= MemWrite1;
+      ShiftAmount1_OUT <= shiftAmount1;
+      Instr1_PC_OUT <= Instr_PC_IN;
 			/*if (RegWrite_IN) begin
 				Reg[WriteRegister_IN] <= WriteData_IN;
 				$display("IDWB:Reg[%d]=%x",WriteRegister_IN,WriteData_IN);

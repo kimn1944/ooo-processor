@@ -8,19 +8,10 @@
 `include "config.v"
 
 module TABLE_obj
-    #(parameter temp = 1,
-      parameter tag = "Table")
+    #(parameter tag = "Table")
     (input clk,
       input reset,
       input stall,
-
-      input [4:0] RegA,
-      input [4:0] RegB,
-      input [4:0] RegC,
-
-      output [5:0] MapA,
-      output [5:0] MapB,
-      output [5:0] MapC,
 
       input [4:0] reg_to_map,
       input [5:0] new_mapping,
@@ -34,17 +25,12 @@ module TABLE_obj
     integer i;
     reg [5:0] arr [31:0]/*verilator public*/;
 
-    always @ * begin
-        MapA <= arr[RegA];
-        MapB <= arr[RegB];
-        MapC <= arr[RegC];
-        my_map <= arr;
-    end
+    assign my_map = arr;
 
     always @(posedge clk or negedge reset) begin
         if(!reset) begin
             for(i = 0; i < 32; i = i + 1) begin
-                arr[i] = temp ? i : 31 - i;
+                arr[i] = i;
             end
         end
         else if(!stall) begin
