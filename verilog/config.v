@@ -22,5 +22,7 @@
 //`define OUT_OF_ORDER
 
 `define REMAP
-// `define QUEUE
-`define TABLE
+
+// commenting
+`define QUEUE
+// `define TABLE

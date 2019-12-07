@@ -9,7 +9,8 @@
 
 module QUEUE_obj
     #(parameter LENGTH = 8,
-      parameter WIDTH = 32)
+      parameter WIDTH = 32,
+      parameter TAG = "Queue")
     (input clk,
       input reset,
       input stall,
@@ -62,11 +63,11 @@ module QUEUE_obj
         end
 
         `ifdef QUEUE
-            $display("Queue");
-            $display("Queue: %x, Size: %d, Head: %d, Tail: %d", queue[0], size, head, tail);
-            $display("Enq Data[%x]: %x, Deq Data[%x]: %x", enque, enque_data, deque, deque_data);
+            $display("Print %s", TAG);
+            $display("Queue: %x, Size: %d, Head: %d, Tail: %d", queue[0], size, (deque & ~stall & (size > 0)) ? ((head < LENGTH - 1) ? head + 1 : 0) : head, (enque & ~halt & (size < LENGTH)) ? ((tail < LENGTH - 1) ? tail + 1 : 0) : tail);
+            $display("Enq Data[%x]: %x, Deq Data[%x]: %x", enque, enque_data, deque, (deque & ~stall & (size > 0)) ? queue[head] : 0);
             $display("Stall: %x, Halt: %x, Flush: %x, Reset: %x", stall, halt, flush, ~reset);
-            $display("END Queue");
+            $display("END %s", TAG);
         `endif
     end
 

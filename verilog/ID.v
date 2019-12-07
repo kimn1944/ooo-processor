@@ -99,20 +99,91 @@ wire [31:0] Instr_PC_IN;
 wire [31:0] Instr_PC_Plus4_IN;
 wire [63:0] deque_data;
 
-assign Instr1_IN         = deque_data[31:0];
-assign Instr_PC_IN       = deque_data[63:32];
-assign Instr_PC_Plus4_IN = deque_data[63:32] + 32'd4;
-
     QUEUE_obj #(.LENGTH(8), .WIDTH(64)) decode_queue
     (.clk(CLK),
     .reset(RESET),
-    .stall(WANT_FREEZE),
+    .stall(rename_halt),
     .flush(Request_Alt_PC),
     .enque(1),
     .enque_data({instr_pc_in, instr1_in}),
     .deque(1),
     .deque_data(deque_data),
     .halt(halt));
+
+    // wire rename_halt;
+    // wire [63:0] debug;
+    // wire [95:0] operands;
+    // wire [14:0] regs;
+    // wire [13:0] controls;
+    // wire [188:0] rename_entry;
+    // wire [188:0] rename_out;
+    //
+    // assign debug = {Instr_PC_IN, Instr1_IN};
+    // assign operands = {OpA1, OpB1, MemWriteData1};
+    // assign regs = {RegA1, RegB1, WriteRegister1};
+    // assign controls = {RegWrite1, ALU_control1, MemRead1, MemWrite1, shiftAmount1};
+    // assign rename_entry = {debug, operands, regs, controls};
+
+    wire rename_halt;
+    wire [4:0] rs;
+    wire [4:0] rt;
+    wire [4:0] rd;
+    wire [63:0] instr_info;
+    wire [14:0] regs;
+    wire controls;
+    wire [79:0] rename_entry;
+    wire [79:0] rename_out;
+
+    assign rs = link ? 5'b00000 : deque_data[31:0][25:21];
+    assign rt = rgdst ? deque_data[31:0][20:16] : 5'd0;
+    assign rd = rgdst ? deque_data[31:0][15:11] : deque_data[31:0][20:16];
+    assign instr_info = {deque_data[63:32], deque_data[31:0]};
+    assign regs = {rs, rt, rd};
+    assign controls = rgwrt;
+    assign rename_entry = {instr_info, regs, controls};
+
+    QUEUE_obj #(.LENGTH(8), .WIDTH(80), .TAG("Rename Queue")) rename_queue
+    (.clk(CLK),
+    .reset(RESET),
+    .stall(0),
+    .flush(Request_Alt_PC),
+    .enque(1),
+    .enque_data(rename_entry),
+    .deque(1),
+    .deque_data(rename_out),
+    .halt(rename_halt));
+
+    assign Instr1_IN         = rename_out[47:16];
+    assign Instr_PC_IN       = rename_out[79:48];
+    assign Instr_PC_Plus4_IN = rename_out[79:48] + 32'd4;
+
+    wire link;
+    wire rgdst;
+    wire rgwrt;
+
+    Decoder #(
+    .TAG("2")
+    )
+    Decoder2 (
+    .Instr(deque_data[31:0]),
+    .Instr_PC(deque_data[63:32]),
+    .Link(link),
+    .RegDest(rgdst),
+    .Jump(),
+    .Branch(),
+    .MemRead(),
+    .MemWrite(),
+    .ALUSrc(),
+    .RegWrite(rgwrt),
+    .JumpRegister(),
+    .SignOrZero(),
+    .Syscall(),
+    .ALUControl(),
+/* verilator lint_off PINCONNECTEMPTY */
+    .MultRegAccess(),   //Needed for out-of-order
+/* verilator lint_on PINCONNECTEMPTY */
+     .comment1(0)
+    );
 //******************************************************************************
 	 wire [5:0]	ALU_control1;	//async. ALU_Control output
 	 wire			link1;			//whether this is a "And Link" instruction
@@ -304,7 +375,7 @@ wire [5:0] mapC;
         .new_mapping(0),
         .remap(0),
         .new_map(R_F),
-        .overwrite(SYS),
+        .overwrite(0),
         .my_map(F_R));
 
     TABLE_obj #(.temp(0)) RRAT
@@ -438,7 +509,7 @@ always @(posedge CLK or negedge RESET) begin
                     ReadRegisterB1_OUT <= RegB1;
                     WriteRegister1_OUT <= WriteRegister1;
                     MemWriteData1_OUT <= MemWriteData1;
-                    RegWrite1_OUT <= (WriteRegister1!=5'd0)?RegWrite1:1'd0;
+                    RegWrite1_OUT <= (WriteRegister1 != 5'd0) ? RegWrite1 : 1'd0;
                     ALU_Control1_OUT <= ALU_control1;
                     MemRead1_OUT <= MemRead1;
                     MemWrite1_OUT <= MemWrite1;
