@@ -57,6 +57,7 @@ wire id_ld_flag;
 wire id_st_flag;
 wire id_RegWr_flag;
 
+
 assign id_ld_flag = id_control[4];
 assign id_st_flag = id_control[3];
 assign id_RegWr_flag = id_control[5];
@@ -69,13 +70,14 @@ QUEUE_obj #(.LENGTH(32), .WIDTH(6)) freelist (
       .stall(STALL),
       .flush(FLUSH),
 
-      .enque(rrat_free),
-      .enque_data(rrat_free_reg),
+      .enque(rob_free),
+      .enque_data(rob_free_reg),
 
       .deque(id_RegWr_flag | id_ld_flag),
       .deque_data(free_reg),
       .halt()
       );
+
 
 always @(negedge CLK or negedge RESET) begin
     if(!RESET) begin
