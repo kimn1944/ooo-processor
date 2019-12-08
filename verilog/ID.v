@@ -280,9 +280,9 @@ wire [31:0] REGS [63:0];
         (.clk(CLK),
         .reset(RESET),
         .stall(STALL),
-        .reg_to_map(0),
-        .new_mapping(0),
-        .remap(0),
+        .reg_to_map(reg_to_map_FRAT),
+        .new_mapping(new_mapping),
+        .remap(remap_FRAT),
         .new_map(R_F),
         .overwrite(0),
         .my_map(F_R));
@@ -293,7 +293,7 @@ wire [31:0] REGS [63:0];
         .stall(STALL),
         .reg_to_map(0),
         .new_mapping(0),
-        .remap(),
+        .remap(0),
         .new_map(F_R),
         .overwrite(0),
         .my_map(R_F));
@@ -310,6 +310,63 @@ wire [31:0] REGS [63:0];
     assign rsRawVal1 = REGS[F_R[rs1]];
     assign rtRawVal1 = REGS[F_R[rt1]];
     assign WriteRegisterRawVal1 = REGS[F_R[WriteRegister1]];
+
+    wire halt_rename_queue;
+
+    wire [4:0] reg_to_map_FRAT;
+    wire [5:0] new_mapping;
+    wire remap_FRAT;
+
+    wire rrat_free;
+    wire [5:0] rrat_free_reg;
+
+    wire [88:0] rename_out;
+
+
+    Rename #() Rename
+        (.CLK(CLK),
+        .RESET(RESET),
+        .STALL(0),
+        .FLUSH(0),
+
+        .id_instr(),
+        .id_instrpc(),
+        .id_RegA(rs1),
+        .id_RegB(rt1),
+        .id_RegWr(WriteRegister1),
+        .id_control(),
+
+        .frat_my_map(F_R),
+
+        .rrat_free(rrat_free),
+        .rrat_free_reg(rrat_free_reg),
+
+        .issue_halt(0),
+        .lsq_halt(0),
+        .rob_halt(0),
+
+        .exe_busyclear_flag(),
+        .exe_busyclear_reg(),
+
+        .reg_to_map_FRAT(reg_to_map_FRAT),
+        .new_mapping(new_mapping),
+        .remap_FRAT(remap_FRAT),
+
+        .entry_allocate_issue(),
+        .entry_issue(),
+        .busy(),
+
+        .entry_ld_lsq(),
+        .entry_st_lsq(),
+        .entry_lsq(),
+
+        .entry_allocate_ROB(rename_out),
+        .entry_ROB(), // need
+
+        .halt_rename_queue(halt_rename_queue),
+
+        .instr_num());
+
 `else
     RegFile RegFile (
         .CLK(CLK),

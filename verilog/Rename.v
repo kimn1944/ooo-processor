@@ -47,10 +47,11 @@ module Rename (
     output reg entry_allocate_ROB,
     output reg [88:0] entry_ROB,
 
-    output integer instr_num
-);
+    // stalling the rename queue
+    output halt_rename_queue,
 
-wire free_halt;
+    output integer instr_num);
+
 reg  [5:0] free_reg;
 wire id_ld_flag;
 wire id_st_flag;
@@ -59,6 +60,8 @@ wire id_RegWr_flag;
 assign id_ld_flag = id_control[4];
 assign id_st_flag = id_control[3];
 assign id_RegWr_flag = id_control[5];
+
+assign halt_rename_queue = issue_halt | STALL | rob_halt | lsq_halt | (free_reg == 0);
 
 QUEUE_obj #(.LENGTH(32), .WIDTH(6)) freelist (
       .clk(CLK),
@@ -71,7 +74,7 @@ QUEUE_obj #(.LENGTH(32), .WIDTH(6)) freelist (
 
       .deque(id_RegWr_flag | id_ld_flag),
       .deque_data(free_reg),
-      .halt(free_halt)
+      .halt()
       );
 
 always @(negedge CLK or negedge RESET) begin
@@ -84,27 +87,27 @@ always @(negedge CLK or negedge RESET) begin
         instr_num <= 0;
         remap_FRAT <= 0;
         $display("");
-    end else if(!CLK & !(free_halt | issue_halt | STALL | rob_halt | lsq_halt |  (free_reg == 0) ) ) begin
+    end else if(!CLK & !(issue_halt | STALL | rob_halt | lsq_halt | (free_reg == 0))) begin
         entry_allocate_ROB <= 1;
         instr_num <= instr_num + 1;
         entry_ROB[88:18] <= {id_instr, id_instrpc, id_control};
         entry_ROB[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
-        entry_ROB[17:12] <= id_RegWr_flag ? free_data : frat_my_map[id_RegA];
+        entry_ROB[17:12] <= id_RegWr_flag ? free_reg : frat_my_map[id_RegWr];
 
         entry_allocate_issue <= ~(id_ld_flag | id_st_flag);
         entry_issue[88:18] <= {id_instr, id_instrpc, id_control};
         entry_issue[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
-        entry_issue[17:12] <= id_RegWr_flag ? free_data : frat_my_map[id_RegA];
+        entry_issue[17:12] <= id_RegWr_flag ? free_reg : frat_my_map[id_RegWr];
 
         remap_FRAT <= id_RegWr_flag | id_ld_flag;
-        new_mapping <= free_data;
+        new_mapping <= free_reg;
         reg_to_map_FRAT <= id_RegWr;
 
         entry_ld_lsq <= id_ld_flag;
         entry_st_lsq <= id_st_flag;
         entry_lsq [88:18] <= {id_instr, id_instrpc, id_control};
         entry_lsq[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
-        entry_lsq[17:12] <= (id_ld_flag) ? free_data : frat_my_map[id_RegA];
+        entry_lsq[17:12] <= (id_ld_flag) ? free_reg : frat_my_map[id_RegWr];
 
         busy[frat_my_map[id_RegWr]] <= (id_RegWr_flag | id_ld_flag ) ? 1 : busy[frat_my_map[id_RegWr]];
         busy[exe_busyclear_reg] <= exe_busyclear_flag ? 0 : busy[exe_busyclear_reg];
