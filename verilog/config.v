@@ -1,5 +1,5 @@
 //Added during project 1
-`define HAS_FORWARDING
+// `define HAS_FORWARDING
 `define INCLUDE_IF_CONTENT
 `define HAS_WRITEBACK
 `define INCLUDE_MEM_CONTENT

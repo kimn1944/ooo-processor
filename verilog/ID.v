@@ -75,18 +75,6 @@ module ID(
     //Shift amount [for ALU functions] (passed to EXE)
     output reg [4:0]ShiftAmount1_OUT,
 
-`ifdef HAS_FORWARDING
-    //Bypass inputs for calculations that have completed EXE
-    input [4:0]     BypassReg1_EXEID,
-    input [31:0]    BypassData1_EXEID,
-    input               BypassValid1_EXEID,
-
-    //Bypass inputs for loads from memory (and previous-instruction EXE outputs)
-    input [4:0]     BypassReg1_MEMID,
-    input [31:0]    BypassData1_MEMID,
-    input               BypassValid1_MEMID,
-`endif
-
 	 //Tell the simulator to process a system call
 	 output reg SYS,
 	 //Tell fetch to stop advancing the PC, and wait.
@@ -98,7 +86,9 @@ wire [31:0] Instr1_IN;
 wire [31:0] Instr_PC_IN;
 wire [31:0] Instr_PC_Plus4_IN;
 wire [63:0] deque_data;
+wire halt_IF;
 
+assign halt = !Request_Alt_PC && halt_IF;
     QUEUE_obj #(.LENGTH(8), .WIDTH(64)) decode_queue
     (.clk(CLK),
     .reset(RESET),
@@ -108,7 +98,7 @@ wire [63:0] deque_data;
     .enque_data({instr_pc_in, instr1_in}),
     .deque(1),
     .deque_data(deque_data),
-    .halt(halt));
+    .halt(halt_IF));
 
     // wire rename_halt;
     // wire [63:0] debug;
@@ -142,10 +132,10 @@ wire [63:0] deque_data;
     assign controls = {rgwrt, memrd, memwrt, {hilo, hilowrt}, sys};
     assign rename_entry = {instr_info, regs, controls};
 
-    QUEUE_obj #(.LENGTH(8), .WIDTH(86), .TAG("Rename Queue")) rename_queue
+    QUEUE_obj #(.SPECIAL(1), .LENGTH(8), .WIDTH(86), .TAG("Rename Queue")) rename_queue
     (.clk(CLK),
     .reset(RESET),
-    .stall(0),
+    .stall(bubble != 0),
     .flush(Request_Alt_PC),
     .enque(1),
     .enque_data(rename_entry),
@@ -185,9 +175,7 @@ wire [63:0] deque_data;
     .SignOrZero(),
     .Syscall(sys),
     .ALUControl(),
-/* verilator lint_off PINCONNECTEMPTY */
     .MultRegAccess(hilo),   //Needed for out-of-order
-/* verilator lint_on PINCONNECTEMPTY */
      .comment1(0)
     );
 //******************************************************************************
@@ -230,10 +218,6 @@ wire [63:0] deque_data;
      wire [4:0]     shiftAmount1;
      wire [15:0]    immediate1;
 
-	reg [2:0]	syscall_bubble_counter;
-
-
-
      assign rs1 = Instr1_IN[25:21];
      assign rt1 = Instr1_IN[20:16];
      assign rd1 = Instr1_IN[15:11];
@@ -242,27 +226,8 @@ wire [63:0] deque_data;
 
 //Begin branch/jump calculation
 
-	wire [31:0] rsval_jump1;
-
-`ifdef HAS_FORWARDING
-RegValue3 RegJumpValue1 (
-    .ReadRegister1(rs1),
-    .RegisterData1(rsRawVal1),
-    .WriteRegister1stPri1(BypassReg1_EXEID),
-    .WriteData1stPri1(BypassData1_EXEID),
-	 .Valid1stPri1(BypassValid1_EXEID),
-    .WriteRegister2ndPri1(BypassReg1_MEMID),
-    .WriteData2ndPri1(BypassData1_MEMID),
-	 .Valid2ndPri1(BypassValid1_MEMID),
-    .WriteRegister3rdPri1(WriteRegister1_IN),
-    .WriteData3rdPri1(WriteData1_IN),
-	 .Valid3rdPri1(RegWrite1_IN),
-    .Output1(rsval_jump1),
-	 .comment(1'b0)
-    );
-`else
+    wire [31:0] rsval_jump1;
     assign rsval_jump1 = rsRawVal1;
-`endif
 
 NextInstructionCalculator NIA1 (
     .Instr_PC_Plus4(Instr_PC_Plus4_IN),
@@ -289,65 +254,12 @@ compare branch_compare1 (
     );
 //End branch/jump calculation
 
-//Handle pipelining
-`ifdef HAS_FORWARDING
-RegValue3 RegAValue1 (
-    .ReadRegister1(rs1),
-    .RegisterData1(rsRawVal1),
-    .WriteRegister1stPri1(BypassReg1_EXEID),
-    .WriteData1stPri1(BypassData1_EXEID),
-	 .Valid1stPri1(BypassValid1_EXEID),
-    .WriteRegister2ndPri1(BypassReg1_MEMID),
-    .WriteData2ndPri1(BypassData1_MEMID),
-	 .Valid2ndPri1(BypassValid1_MEMID),
-    .WriteRegister3rdPri1(WriteRegister1_IN),
-    .WriteData3rdPri1(WriteData1_IN),
-	 .Valid3rdPri1(RegWrite1_IN),
-    .Output1(rsval1),
-	 .comment(1'b0)
-    );
-RegValue3 RegBValue1 (
-    .ReadRegister1(rt1),
-    .RegisterData1(rtRawVal1),
-    .WriteRegister1stPri1(BypassReg1_EXEID),
-    .WriteData1stPri1(BypassData1_EXEID),
-     .Valid1stPri1(BypassValid1_EXEID),
-    .WriteRegister2ndPri1(BypassReg1_MEMID),
-    .WriteData2ndPri1(BypassData1_MEMID),
-     .Valid2ndPri1(BypassValid1_MEMID),
-    .WriteRegister3rdPri1(WriteRegister1_IN),
-    .WriteData3rdPri1(WriteData1_IN),
-     .Valid3rdPri1(RegWrite1_IN),
-    .Output1(rtval1),
-	 .comment(1'b0)
-    );
-`else
 assign rsval1 = rsRawVal1;
 assign rtval1 = rtRawVal1;
-`endif
 
 
 	assign WriteRegister1 = RegDst1?rd1:(link1?5'd31:rt1);
-	//assign MemWriteData1 = Reg[WriteRegister1];		//What will be written by MEM
-`ifdef HAS_FORWARDING
-RegValue3 RegWriteValue1 (
-    .ReadRegister1(WriteRegister1),
-    .RegisterData1(WriteRegisterRawVal1),
-    .WriteRegister1stPri1(BypassReg1_EXEID),
-    .WriteData1stPri1(BypassData1_EXEID),
-	 .Valid1stPri1(BypassValid1_EXEID),
-    .WriteRegister2ndPri1(BypassReg1_MEMID),
-    .WriteData2ndPri1(BypassData1_MEMID),
-	 .Valid2ndPri1(BypassValid1_MEMID),
-    .WriteRegister3rdPri1(WriteRegister1_IN),
-    .WriteData3rdPri1(WriteData1_IN),
-	 .Valid3rdPri1(RegWrite1_IN),
-    .Output1(MemWriteData1),
-	 .comment(1'b0)
-    );
-`else
-    assign MemWriteData1 = WriteRegisterRawVal1;
-`endif
+  assign MemWriteData1 = WriteRegisterRawVal1;
 
 	//OpA will always be rsval, although it might be unused.
 	assign OpA1 = link1?0:rsval1;
@@ -420,6 +332,8 @@ wire [31:0] REGS [63:0];
 	 reg INHIBIT_FREEZE;
      assign WANT_FREEZE = ((FORCE_FREEZE | syscal1) && !INHIBIT_FREEZE);
 
+reg [1:0] bubble;
+
 always @(posedge CLK or negedge RESET) begin
 	if(!RESET) begin
 		Alt_PC <= 0;
@@ -438,62 +352,52 @@ always @(posedge CLK or negedge RESET) begin
 		ShiftAmount1_OUT <= 0;
 		Instr1_PC_OUT <= 0;
 		SYS <= 0;
-		syscall_bubble_counter <= 0;
 		FORCE_FREEZE <= 0;
 		INHIBIT_FREEZE <= 0;
+    bubble <= 0;
 	$display("ID:RESET");
 	end else begin
-      Alt_PC <= Alt_PC1;
-      Request_Alt_PC <= Request_Alt_PC1;
-			//$display("ID:evaluation SBC=%d; syscal1=%d",syscall_bubble_counter,syscal1);
-			case (syscall_bubble_counter)
-				5,4,3: begin
-					//$display("ID:Decrement sbc");
-					syscall_bubble_counter <= syscall_bubble_counter - 3'b1;
-					end
-				2: begin
-					//$display("ID:Decrement sbc, , send sys");
-					syscall_bubble_counter <= syscall_bubble_counter - 3'b1;
-					SYS <= 1;  //We do a flush on LL/SC, but don't need to tell sim_main.
-					INHIBIT_FREEZE <=1;
-					end
-				1: begin
-					//$display("ID:Decrement sbc, inhibit freeze, clear sys");
-					syscall_bubble_counter <= syscall_bubble_counter - 3'b1;
-					SYS <= 0;
-					INHIBIT_FREEZE <=0;
-					end
-				0: begin
-					//$display("ID:reenable freezes");
-					INHIBIT_FREEZE <=0;
-					end
-			endcase
-			if(syscal1 && (syscall_bubble_counter==0)) begin
-				//$display("ID:init SBC");
-				syscall_bubble_counter <= 3'd4;
-			end
-					//$display("ID: send instr");
-      Instr1_OUT <= Instr1_IN;
-      OperandA1_OUT <= OpA1;
-      OperandB1_OUT <= OpB1;
-      ReadRegisterA1_OUT <= RegA1;
-      ReadRegisterB1_OUT <= RegB1;
-      WriteRegister1_OUT <= WriteRegister1;
-      MemWriteData1_OUT <= MemWriteData1;
-      RegWrite1_OUT <= (WriteRegister1 != 5'd0) ? RegWrite1 : 1'd0;
-      ALU_Control1_OUT <= ALU_control1;
-      MemRead1_OUT <= MemRead1;
-      MemWrite1_OUT <= MemWrite1;
-      ShiftAmount1_OUT <= shiftAmount1;
-      Instr1_PC_OUT <= Instr_PC_IN;
-			/*if (RegWrite_IN) begin
-				Reg[WriteRegister_IN] <= WriteData_IN;
-				$display("IDWB:Reg[%d]=%x",WriteRegister_IN,WriteData_IN);
-			end*/
+      bubble <= bubble + 2'b1;
+      if(bubble == 0) begin
+          Alt_PC <= Alt_PC1;
+          Request_Alt_PC <= Request_Alt_PC1;
+          Instr1_OUT <= Instr1_IN;
+          OperandA1_OUT <= OpA1;
+          OperandB1_OUT <= OpB1;
+          ReadRegisterA1_OUT <= RegA1;
+          ReadRegisterB1_OUT <= RegB1;
+          WriteRegister1_OUT <= WriteRegister1;
+          MemWriteData1_OUT <= MemWriteData1;
+          RegWrite1_OUT <= (WriteRegister1 != 5'd0) ? RegWrite1 : 1'd0;
+          ALU_Control1_OUT <= ALU_control1;
+          MemRead1_OUT <= MemRead1;
+          MemWrite1_OUT <= MemWrite1;
+          ShiftAmount1_OUT <= shiftAmount1;
+          Instr1_PC_OUT <= Instr_PC_IN;
+          SYS <= syscal1;
+      end
+      else begin
+          Alt_PC <= 0;
+          Request_Alt_PC <= 0;
+          Instr1_OUT <= 0;
+          OperandA1_OUT <= 0;
+          OperandB1_OUT <= 0;
+          ReadRegisterA1_OUT <= 0;
+          ReadRegisterB1_OUT <= 0;
+          WriteRegister1_OUT <= 0;
+          MemWriteData1_OUT <= 0;
+          RegWrite1_OUT <= 0;
+          ALU_Control1_OUT <= 0;
+          MemRead1_OUT <= 0;
+          MemWrite1_OUT <= 0;
+          ShiftAmount1_OUT <= 0;
+          Instr1_PC_OUT <= 0;
+          SYS <= 0;
+      end
 			if(comment1) begin
-                $display("ID1:Instr=%x,Instr_PC=%x,Req_Alt_PC=%d:Alt_PC=%x;SYS=%d(%d)",Instr1_IN,Instr_PC_IN,Request_Alt_PC1,Alt_PC1,syscal1,syscall_bubble_counter);
-                //$display("ID1:A:Reg[%d]=%x; B:Reg[%d]=%x; Write?%d to %d",RegA1, OpA1, RegB1, OpB1, (WriteRegister1!=5'd0)?RegWrite1:1'd0, WriteRegister1);
-                //$display("ID1:ALU_Control=%x; MemRead=%d; MemWrite=%d (%x); ShiftAmount=%d",ALU_control1, MemRead1, MemWrite1, MemWriteData1, shiftAmount1);
+          $display("ID1:Instr=%x,Instr_PC=%x,Req_Alt_PC=%d:Alt_PC=%x;SYS=%d()",Instr1_IN,Instr_PC_IN,Request_Alt_PC1,Alt_PC1,syscal1);
+          //$display("ID1:A:Reg[%d]=%x; B:Reg[%d]=%x; Write?%d to %d",RegA1, OpA1, RegB1, OpB1, (WriteRegister1!=5'd0)?RegWrite1:1'd0, WriteRegister1);
+          //$display("ID1:ALU_Control=%x; MemRead=%d; MemWrite=%d (%x); ShiftAmount=%d",ALU_control1, MemRead1, MemWrite1, MemWriteData1, shiftAmount1);
 			end
 	end
 end
