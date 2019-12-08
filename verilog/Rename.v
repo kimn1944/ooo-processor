@@ -24,6 +24,10 @@ module Rename (
     input lsq_halt,
     input rob_halt,
 
+    //from EXE
+    input exe_busyclear_flag,
+    input [5:0] exe_busyclear_reg,
+
     //to FRAT
     output reg [4:0] reg_to_map_FRAT,
     output reg [5:0] new_mapping,
@@ -102,6 +106,8 @@ always @(negedge CLK or negedge RESET) begin
         entry_lsq[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
         entry_lsq[17:12] <= (id_ld_flag) ? free_data : frat_my_map[id_RegA];
 
+        busy[frat_my_map[id_RegWr]] <= (id_RegWr_flag | id_ld_flag ) ? 1 : busy[frat_my_map[id_RegWr]];
+        busy[exe_busyclear_reg] <= exe_busyclear_flag ? 0 : busy[exe_busyclear_reg];
     end else begin
         entry_allocate_ROB <= 0;
         entry_allocate_issue <= 0;
