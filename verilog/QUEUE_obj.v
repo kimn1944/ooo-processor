@@ -8,7 +8,8 @@
 `include "config.v"
 
 module QUEUE_obj
-    #(parameter LENGTH = 8,
+    #(parameter SPECIAL = 0,
+      parameter LENGTH = 8,
       parameter WIDTH = 32,
       parameter TAG = "Queue")
     (input clk,
@@ -42,12 +43,24 @@ module QUEUE_obj
             size <= 0;
         end
         else if(flush) begin
-            for(i = 0; i < LENGTH; i = i + 1) begin
-                queue[i] = 0;
+            if(SPECIAL) begin
+                queue[i] = queue[head];
+                for(i = 1; i < LENGTH; i = i + 1) begin
+                    queue[i] = 0;
+                end
+                head <= 0;
+                tail <= 1;
+                size <= 1;
             end
-            head <= 0;
-            tail <= 0;
-            size <= 0;
+            else begin
+                for(i = 0; i < LENGTH; i = i + 1) begin
+                    queue[i] = 0;
+                end
+                head <= 0;
+                tail <= 0;
+                size <= 0;
+            end
+
         end
         else if(clk) begin
             head       <= (deque & ~stall & (size > 0)) ? ((head < LENGTH - 1) ? head + 1 : 0) : head;
