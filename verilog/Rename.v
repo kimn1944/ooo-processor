@@ -24,6 +24,10 @@ module Rename (
     input lsq_halt,
     input rob_halt,
 
+    //from EXE
+    input exe_busyclear_flag,
+    input [5:0] exe_busyclear_reg,
+
     //to FRAT
     output reg [4:0] reg_to_map_FRAT,
     output reg [5:0] new_mapping,
@@ -48,14 +52,11 @@ module Rename (
 
 wire free_halt;
 reg  [5:0] free_reg;
-wire [5:0] free_reg;
 wire id_ld_flag;
 wire id_st_flag;
 wire id_RegWr_flag;
 
-assign regA_FRAT = id_RegA;
-assign regB_FRAT = id_RegB;
-assign regWr_FRAT = id_RegWr;
+
 assign id_ld_flag = id_control[4];
 assign id_st_flag = id_control[3];
 assign id_RegWr_flag = id_control[5];
@@ -74,8 +75,6 @@ QUEUE_obj #(.LENGTH(32), .WIDTH(6)) freelist (
       .halt(free_halt)
       );
 
- // assuming FRAT structure here 
-reg [31:0] FRAT [0:31];
 
 always @(negedge CLK or negedge RESET) begin
     if(!RESET) begin
@@ -88,8 +87,6 @@ always @(negedge CLK or negedge RESET) begin
         remap_FRAT <= 0;
         $display("");
     end else if(!CLK & !(free_halt | issue_halt | STALL | rob_halt | lsq_halt |  (free_reg == 0) ) ) begin
-        
-        
         entry_allocate_ROB <= 1;
         instr_num <= instr_num + 1;
         entry_ROB[88:18] <= {id_instr, id_instrpc, id_control};
@@ -101,7 +98,7 @@ always @(negedge CLK or negedge RESET) begin
         entry_issue[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
         entry_issue[17:12] <= id_RegWr_flag ? free_data : frat_my_map[id_RegA];
         
-        remap_FRAT <= id_RegWr_flag; 
+        remap_FRAT <= id_RegWr_flag | id_ld_flag; 
         new_mapping <= free_data; 
         reg_to_map_FRAT <= id_RegWr;
 
@@ -111,6 +108,8 @@ always @(negedge CLK or negedge RESET) begin
         entry_issue[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
         entry_issue[17:12] <= (id_ld_flag) ? free_data : frat_my_map[id_RegA];
 
+        busy[frat_my_map[id_RegWr]] <= (id_RegWr_flag | id_ld_flag ) ? 1 : busy[frat_my_map[id_RegWr]];
+        busy[exe_busyclear_reg] <= exe_busyclear_flag ? 0 : busy[exe_busyclear_reg];
     end else begin
         entry_allocate_ROB <= 0;
         entry_allocate_issue <= 0;
