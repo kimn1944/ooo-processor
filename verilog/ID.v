@@ -145,7 +145,7 @@ wire [63:0] deque_data;
     QUEUE_obj #(.LENGTH(8), .WIDTH(86), .TAG("Rename Queue")) rename_queue
     (.clk(CLK),
     .reset(RESET),
-    .stall(0),
+    .stall(bubble != 0),
     .flush(Request_Alt_PC),
     .enque(1),
     .enque_data(rename_entry),
@@ -420,6 +420,8 @@ wire [31:0] REGS [63:0];
 	 reg INHIBIT_FREEZE;
      assign WANT_FREEZE = ((FORCE_FREEZE | syscal1) && !INHIBIT_FREEZE);
 
+reg [1:0] bubble;
+
 always @(posedge CLK or negedge RESET) begin
 	if(!RESET) begin
 		Alt_PC <= 0;
@@ -441,59 +443,50 @@ always @(posedge CLK or negedge RESET) begin
 		syscall_bubble_counter <= 0;
 		FORCE_FREEZE <= 0;
 		INHIBIT_FREEZE <= 0;
+    bubble <= 0;
 	$display("ID:RESET");
 	end else begin
-      Alt_PC <= Alt_PC1;
-      Request_Alt_PC <= Request_Alt_PC1;
-			//$display("ID:evaluation SBC=%d; syscal1=%d",syscall_bubble_counter,syscal1);
-			case (syscall_bubble_counter)
-				5,4,3: begin
-					//$display("ID:Decrement sbc");
-					syscall_bubble_counter <= syscall_bubble_counter - 3'b1;
-					end
-				2: begin
-					//$display("ID:Decrement sbc, , send sys");
-					syscall_bubble_counter <= syscall_bubble_counter - 3'b1;
-					SYS <= 1;  //We do a flush on LL/SC, but don't need to tell sim_main.
-					INHIBIT_FREEZE <=1;
-					end
-				1: begin
-					//$display("ID:Decrement sbc, inhibit freeze, clear sys");
-					syscall_bubble_counter <= syscall_bubble_counter - 3'b1;
-					SYS <= 0;
-					INHIBIT_FREEZE <=0;
-					end
-				0: begin
-					//$display("ID:reenable freezes");
-					INHIBIT_FREEZE <=0;
-					end
-			endcase
-			if(syscal1 && (syscall_bubble_counter==0)) begin
-				//$display("ID:init SBC");
-				syscall_bubble_counter <= 3'd4;
-			end
-					//$display("ID: send instr");
-      Instr1_OUT <= Instr1_IN;
-      OperandA1_OUT <= OpA1;
-      OperandB1_OUT <= OpB1;
-      ReadRegisterA1_OUT <= RegA1;
-      ReadRegisterB1_OUT <= RegB1;
-      WriteRegister1_OUT <= WriteRegister1;
-      MemWriteData1_OUT <= MemWriteData1;
-      RegWrite1_OUT <= (WriteRegister1 != 5'd0) ? RegWrite1 : 1'd0;
-      ALU_Control1_OUT <= ALU_control1;
-      MemRead1_OUT <= MemRead1;
-      MemWrite1_OUT <= MemWrite1;
-      ShiftAmount1_OUT <= shiftAmount1;
-      Instr1_PC_OUT <= Instr_PC_IN;
-			/*if (RegWrite_IN) begin
-				Reg[WriteRegister_IN] <= WriteData_IN;
-				$display("IDWB:Reg[%d]=%x",WriteRegister_IN,WriteData_IN);
-			end*/
+      bubble <= bubble + 2'b1;
+      if(bubble == 0) begin
+          Alt_PC <= Alt_PC1;
+          Request_Alt_PC <= Request_Alt_PC1;
+          Instr1_OUT <= Instr1_IN;
+          OperandA1_OUT <= OpA1;
+          OperandB1_OUT <= OpB1;
+          ReadRegisterA1_OUT <= RegA1;
+          ReadRegisterB1_OUT <= RegB1;
+          WriteRegister1_OUT <= WriteRegister1;
+          MemWriteData1_OUT <= MemWriteData1;
+          RegWrite1_OUT <= (WriteRegister1 != 5'd0) ? RegWrite1 : 1'd0;
+          ALU_Control1_OUT <= ALU_control1;
+          MemRead1_OUT <= MemRead1;
+          MemWrite1_OUT <= MemWrite1;
+          ShiftAmount1_OUT <= shiftAmount1;
+          Instr1_PC_OUT <= Instr_PC_IN;
+          SYS <= syscal1;
+      end
+      else begin
+          Alt_PC <= 0;
+          Request_Alt_PC <= 0;
+          Instr1_OUT <= 0;
+          OperandA1_OUT <= 0;
+          OperandB1_OUT <= 0;
+          ReadRegisterA1_OUT <= 0;
+          ReadRegisterB1_OUT <= 0;
+          WriteRegister1_OUT <= 0;
+          MemWriteData1_OUT <= 0;
+          RegWrite1_OUT <= 0;
+          ALU_Control1_OUT <= 0;
+          MemRead1_OUT <= 0;
+          MemWrite1_OUT <= 0;
+          ShiftAmount1_OUT <= 0;
+          Instr1_PC_OUT <= 0;
+          SYS <= 0;
+      end
 			if(comment1) begin
-                $display("ID1:Instr=%x,Instr_PC=%x,Req_Alt_PC=%d:Alt_PC=%x;SYS=%d(%d)",Instr1_IN,Instr_PC_IN,Request_Alt_PC1,Alt_PC1,syscal1,syscall_bubble_counter);
-                //$display("ID1:A:Reg[%d]=%x; B:Reg[%d]=%x; Write?%d to %d",RegA1, OpA1, RegB1, OpB1, (WriteRegister1!=5'd0)?RegWrite1:1'd0, WriteRegister1);
-                //$display("ID1:ALU_Control=%x; MemRead=%d; MemWrite=%d (%x); ShiftAmount=%d",ALU_control1, MemRead1, MemWrite1, MemWriteData1, shiftAmount1);
+          $display("ID1:Instr=%x,Instr_PC=%x,Req_Alt_PC=%d:Alt_PC=%x;SYS=%d(%d)",Instr1_IN,Instr_PC_IN,Request_Alt_PC1,Alt_PC1,syscal1,syscall_bubble_counter);
+          //$display("ID1:A:Reg[%d]=%x; B:Reg[%d]=%x; Write?%d to %d",RegA1, OpA1, RegB1, OpB1, (WriteRegister1!=5'd0)?RegWrite1:1'd0, WriteRegister1);
+          //$display("ID1:ALU_Control=%x; MemRead=%d; MemWrite=%d (%x); ShiftAmount=%d",ALU_control1, MemRead1, MemWrite1, MemWriteData1, shiftAmount1);
 			end
 	end
 end
