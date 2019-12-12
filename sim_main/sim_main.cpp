@@ -774,7 +774,7 @@ int main(int argc, char **argv)
 #ifndef OOO
 					puts("--REG DUMP------------------------- ");
 					for (int j=START_REG; j < NUMBER_OF_REGS; j++) {
-						printf("REG[%2d]: %s (%d)",j,num2Str(read_register(j)).c_str(),read_register(j));
+						printf("REG[%2d:%2d]: %s (%d)", j, register_arch_to_phys(j), num2Str(read_register(j)).c_str(), read_register(j));
 						if(j%2==0){printf("\t\t");}
 						else{printf("\n");}
 					}

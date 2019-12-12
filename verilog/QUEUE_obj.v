@@ -9,6 +9,7 @@
 
 module QUEUE_obj
     #(parameter SPECIAL = 0,
+      parameter INIT = 0,
       parameter LENGTH = 8,
       parameter WIDTH = 32,
       parameter TAG = "Queue")
@@ -35,12 +36,22 @@ module QUEUE_obj
 
     always @(posedge clk or negedge reset) begin
         if(!reset) begin
-            for(i = 0; i < LENGTH; i = i + 1) begin
-                queue[i] = 0;
+            if(INIT == 0) begin
+                for(i = 0; i < LENGTH; i = i + 1) begin
+                    queue[i] = 0;
+                end
+                head <= 0;
+                tail <= 0;
+                size <= 0;
             end
-            head <= 0;
-            tail <= 0;
-            size <= 0;
+            else begin
+                for(i = 0; i < LENGTH; i = i + 1) begin
+                    queue[i] = 32 + i;
+                end
+                head <= 0;
+                tail <= LENGTH - 1;
+                size <= LENGTH;
+            end
         end
         else if(flush) begin
             if(SPECIAL) begin

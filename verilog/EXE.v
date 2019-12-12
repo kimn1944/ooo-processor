@@ -25,16 +25,8 @@ module EXE(
     input [31:0] Instr1_IN,
     //Current instruction's PC [debug]
     input [31:0] Instr1_PC_IN,
-`ifdef HAS_FORWARDING
-    //Register A (needed for forwarding)
-    input [4:0] RegisterA1_IN,
-`endif
     //Operand A (if already known)
     input [31:0] OperandA1_IN,
-`ifdef HAS_FORWARDING
-    //Register B (needed for forwarding)
-    input [4:0] RegisterB1_IN,
-`endif
     //Operand B (if already known)
     input [31:0] OperandB1_IN,
     //Destination register
@@ -69,19 +61,6 @@ module EXE(
     output reg MemRead1_OUT,
     //We need to write to MEM (passed to MEM)
     output reg MemWrite1_OUT
-
-`ifdef HAS_FORWARDING
-    ,
-
-    //Bypass inputs for calculations that have completed MEM
-	 input[4:0] BypassReg1_MEMEXE,
-	 input[31:0] BypassData1_MEMEXE,
-	 input BypassValid1_MEMEXE,
-
-    //Bypass outputs for calculations that have completed EXE
-	 output [31:0] ALU_result_async1,
-	 output ALU_result_async_valid1
-`endif
     );
 
 
@@ -92,36 +71,8 @@ module EXE(
 	 wire comment1;
 	 assign comment1 = 1;
 
-`ifdef HAS_FORWARDING
-RegValue2 RegAValue(
-    .ReadRegister1(RegisterA1_IN),
-    .RegisterData1(OperandA1_IN),
-    .WriteRegister1stPri1(WriteRegister1_OUT),
-    .WriteData1stPri1(ALU_result1_OUT),
-    .Valid1stPri1(RegWrite1_OUT && !(MemRead1_OUT || MemWrite1_OUT)),
-    .WriteRegister2ndPri1(BypassReg1_MEMEXE),
-    .WriteData2ndPri1(BypassData1_MEMEXE),
-    .Valid2ndPri1(BypassValid1_MEMEXE),
-    .Output1(A1),
-	 .comment(1'b0)
-    );
-
-RegValue2 RegBValue(
-    .ReadRegister1(RegisterB1_IN),
-    .RegisterData1(OperandB1_IN),
-    .WriteRegister1stPri1(WriteRegister1_OUT),
-    .WriteData1stPri1(ALU_result1_OUT),
-    .Valid1stPri1(RegWrite1_OUT && !(MemRead1_OUT || MemWrite1_OUT)),
-    .WriteRegister2ndPri1(BypassReg1_MEMEXE),
-    .WriteData2ndPri1(BypassData1_MEMEXE),
-    .Valid2ndPri1(BypassValid1_MEMEXE),
-    .Output1(B1),
-	 .comment(1'b0)
-    );
-`else
 assign A1 = OperandA1_IN;
 assign B1 = OperandB1_IN;
-`endif
 
 reg [31:0] HI/*verilator public*/;
 reg [31:0] LO/*verilator public*/;
@@ -150,25 +101,7 @@ ALU ALU1(
 
 wire [31:0] MemWriteData1;
 
-`ifdef HAS_FORWARDING
-RegValue2 MemoryDataValue(
-    .ReadRegister1(WriteRegister1_IN),
-    .RegisterData1(MemWriteData1_IN),
-    .WriteRegister1stPri1(WriteRegister1_OUT),
-    .WriteData1stPri1(ALU_result1_OUT),
-    .Valid1stPri1(RegWrite1_OUT && !(MemRead1_OUT || MemWrite1_OUT)),
-    .WriteRegister2ndPri1(BypassReg1_MEMEXE),
-    .WriteData2ndPri1(BypassData1_MEMEXE),
-    .Valid2ndPri1(BypassValid1_MEMEXE),
-    .Output1(MemWriteData1),
-	 .comment(1'b0)
-    );
-
-	assign ALU_result_async1 = ALU_result1;
-	assign ALU_result_async_valid1 = RegWrite1_IN && !(MemRead1_IN || MemWrite1_IN);
-`else
 assign MemWriteData1 = MemWriteData1_IN;
-`endif
 
 always @(posedge CLK or negedge RESET) begin
 	if(!RESET) begin

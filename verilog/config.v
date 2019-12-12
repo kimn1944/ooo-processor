@@ -26,3 +26,4 @@
 // commenting
 // `define QUEUE
 // `define TABLE
+`define RENAME

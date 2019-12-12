@@ -38,7 +38,10 @@ module TABLE_obj
                 arr <= new_map;
             end
             else begin
-                arr[reg_to_map] <= remap ? new_mapping : arr[reg_to_map];
+                if(reg_to_map != 0) begin
+                    arr[reg_to_map] <= remap ? new_mapping : arr[reg_to_map];
+                end
+
             end
         end
         `ifdef TABLE

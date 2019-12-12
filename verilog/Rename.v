@@ -1,3 +1,12 @@
+/*
+* File: PHYS_REG.v
+* Author: Nikita Kim & Celine Wang
+* Email: kimn1944@gmail.com
+* Date: 12/10/19
+*/
+
+`include "config.v"
+
 module Rename (
     input CLK,
     input RESET,
@@ -10,7 +19,7 @@ module Rename (
     input [4:0] id_RegA,
     input [4:0] id_RegB,
     input [4:0] id_RegWr,
-    input [6:0] id_control,
+    input [103:0] id_control, // link, regDest, jm, br, memrd, memwrt, has_imm, rgwrt, jreg, szextend, sys, alucon[5:0], hilo[1:0], shamt, immed, se_imm, ze_imm
 
     //from FRAT
     input [5:0] frat_my_map [31:0],
@@ -35,17 +44,17 @@ module Rename (
 
     //to issue queue
     output reg entry_allocate_issue,
-    output reg [88:0] entry_issue, //Instr [88:57], instr_pc [56:25], control[24:18], MAPC[17:12], MAPB[11:6], MAPA[5:0]
+    output reg [185:0] entry_issue, //Instr [88:57], instr_pc [56:25], control[24:18], MAPC[17:12], MAPB[11:6], MAPA[5:0]
     output reg [63:0] busy,
 
     //to LSQ
     output reg entry_ld_lsq,
     output reg entry_st_lsq,
-    output reg [88:0] entry_lsq,
+    output reg [185:0] entry_lsq,
 
     //to ROB
     output reg entry_allocate_ROB,
-    output reg [88:0] entry_ROB,
+    output reg [185:0] entry_ROB,
 
     // stalling the rename queue
     output halt_rename_queue,
@@ -58,25 +67,24 @@ wire id_st_flag;
 wire id_RegWr_flag;
 
 
-assign id_ld_flag = id_control[4];
-assign id_st_flag = id_control[3];
-assign id_RegWr_flag = id_control[5];
+assign id_ld_flag = id_control[99];
+assign id_st_flag = id_control[98];
+assign id_RegWr_flag = id_control[96] & (id_instr != 0);
 
 assign halt_rename_queue = issue_halt | STALL | rob_halt | lsq_halt | (free_reg == 0);
 
-QUEUE_obj #(.LENGTH(32), .WIDTH(6)) freelist (
+QUEUE_obj #(.INIT(1), .LENGTH(32), .WIDTH(6)) freelist (
       .clk(CLK),
       .reset(RESET),
-      .stall(STALL),
+      .stall(1),
       .flush(FLUSH),
 
-      .enque(rob_free),
-      .enque_data(rob_free_reg),
+      .enque(rrat_free),
+      .enque_data(rrat_free_reg),
 
       .deque(id_RegWr_flag | id_ld_flag),
       .deque_data(free_reg),
-      .halt()
-      );
+      .halt());
 
 
 always @(negedge CLK or negedge RESET) begin
@@ -88,16 +96,15 @@ always @(negedge CLK or negedge RESET) begin
         busy <= 0;
         instr_num <= 0;
         remap_FRAT <= 0;
-        $display("");
     end else if(!CLK & !(issue_halt | STALL | rob_halt | lsq_halt | (free_reg == 0))) begin
         entry_allocate_ROB <= 1;
         instr_num <= instr_num + 1;
-        entry_ROB[88:18] <= {id_instr, id_instrpc, id_control};
+        entry_ROB[185:18] <= {id_control, id_instr, id_instrpc};
         entry_ROB[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
         entry_ROB[17:12] <= id_RegWr_flag ? free_reg : frat_my_map[id_RegWr];
 
         entry_allocate_issue <= ~(id_ld_flag | id_st_flag);
-        entry_issue[88:18] <= {id_instr, id_instrpc, id_control};
+        entry_issue[185:18] <= {id_control, id_instr, id_instrpc};
         entry_issue[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
         entry_issue[17:12] <= id_RegWr_flag ? free_reg : frat_my_map[id_RegWr];
 
@@ -107,7 +114,7 @@ always @(negedge CLK or negedge RESET) begin
 
         entry_ld_lsq <= id_ld_flag;
         entry_st_lsq <= id_st_flag;
-        entry_lsq [88:18] <= {id_instr, id_instrpc, id_control};
+        entry_lsq [185:18] <= {id_control, id_instr, id_instrpc};
         entry_lsq[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
         entry_lsq[17:12] <= (id_ld_flag) ? free_reg : frat_my_map[id_RegWr];
 
@@ -120,6 +127,15 @@ always @(negedge CLK or negedge RESET) begin
         entry_st_lsq <= 0;
         remap_FRAT <= 0;
     end
+end
+
+always @(negedge CLK) begin
+    $display("Rename");
+    $display("Instr: %x, InstrPC: %x", id_instr, id_instrpc);
+    $display("RS: %d, RT: %d, RD: %d, MS: %d, MT: %d, MD: %d", id_RegA, id_RegB, id_RegWr, frat_my_map[id_RegA], frat_my_map[id_RegB], (id_ld_flag) ? free_reg : frat_my_map[id_RegWr]);
+    $display("Reg Wrt?: %x, Load?: %x", id_RegWr_flag, id_ld_flag);
+    $display("Reg to Map: %d, New Mapping: %d, Remap?: %x", id_RegWr, free_reg, id_RegWr_flag | id_ld_flag);
+    $display("End Rename");
 end
 
 endmodule

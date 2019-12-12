@@ -81,7 +81,11 @@ void write_register(uint32_t regno, uint32_t value) {
 
 uint32_t register_arch_to_phys(uint32_t regno) {
 #ifndef OOO
-	return regno;
+	#ifdef REMAP
+			return _FRAT->arr[regno];
+	#else
+			return regno;
+	#endif
 #else
 	if(!_RC) {
 		printf("BUG: FAILURE to init_register_access()");
