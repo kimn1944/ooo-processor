@@ -294,23 +294,28 @@ assign rtval1 = rtRawVal1;
   assign RegB1 = oldB;
 
 //******************************************************************************
-wire [5:0] F_R [31:0];
-wire [5:0] R_F [31:0];
-wire [31:0] REGS [63:0];
+
 
 `ifdef REMAP
+    wire [5:0] F_R [31:0];
+    wire [5:0] R_F [31:0];
+    wire [31:0] REGS [63:0];
+    wire [5:0] returned_mapping;
+    wire return_map;
     TABLE_obj #() FRAT
         (.clk(CLK),
         .reset(RESET),
         .stall(0),
-        // .reg_to_map(reg_to_map_FRAT),
-        // .new_mapping(new_mapping),
-        // .remap(remap_FRAT),
-        .reg_to_map(0),
-        .new_mapping(0),
-        .remap(0),
+        .reg_to_map(reg_to_map_FRAT),
+        .new_mapping(new_mapping),
+        .remap(remap_FRAT),
+        // .reg_to_map(0),
+        // .new_mapping(0),
+        // .remap(0),
         .new_map(R_F),
         .overwrite(0),
+        .returned_mapping(returned_mapping),
+        .return_map(return_map),
         .my_map(F_R));
 
     TABLE_obj #() RRAT
@@ -322,6 +327,8 @@ wire [31:0] REGS [63:0];
         .remap(0),
         .new_map(F_R),
         .overwrite(0),
+        .returned_mapping(),
+        .return_map(),
         .my_map(R_F));
 
     PHYS_REG #() PHYS_REG
@@ -377,8 +384,8 @@ wire [31:0] REGS [63:0];
 
         .frat_my_map(F_R),
 
-        .rrat_free(rrat_free),
-        .rrat_free_reg(rrat_free_reg),
+        .rrat_free(return_map), 
+        .rrat_free_reg(returned_mapping),
 
         .issue_halt(0),
         .lsq_halt(0),

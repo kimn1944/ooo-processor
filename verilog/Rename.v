@@ -75,7 +75,7 @@ assign id_ld_flag = id_control[99];
 assign id_st_flag = id_control[98];
 assign id_RegWr_flag = id_control[96] & (id_instr != 0);
 
-assign halt_rename_queue = issue_halt | STALL | rob_halt | lsq_halt;
+assign halt_rename_queue = issue_halt | STALL | rob_halt | lsq_halt | free_halt;
 
 QUEUE_obj #(.INIT(1), .LENGTH(32), .WIDTH(6)) freelist (
       .clk(CLK),
@@ -103,7 +103,7 @@ always @(negedge CLK or negedge RESET) begin
         oldA <= 0;
         oldB <= 0;
         oldC <= 0;
-    end else if(!CLK & !(issue_halt | STALL | rob_halt | lsq_halt)) begin
+    end else if(!CLK & !(issue_halt | STALL | rob_halt | lsq_halt | free_halt)) begin
         entry_allocate_ROB <= 1;
         instr_num <= instr_num + 1;
         entry_ROB[185:18] <= {id_control, id_instr, id_instrpc};
@@ -136,6 +136,7 @@ always @(negedge CLK or negedge RESET) begin
         entry_allocate_issue <= 0;
         entry_ld_lsq <= 0;
         entry_st_lsq <= 0;
+        entry_ROB <= 0;
         remap_FRAT <= 0;
         oldA <= 0;
         oldB <= 0;

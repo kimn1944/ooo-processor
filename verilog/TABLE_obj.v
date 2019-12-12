@@ -20,6 +20,9 @@ module TABLE_obj
       input [5:0] new_map [31:0],
       input overwrite,
 
+      output [5:0] returned_mapping,
+      output return_map,
+
       output [5:0] my_map [31:0]);
 
     integer i;
@@ -40,6 +43,8 @@ module TABLE_obj
             else begin
                 if(reg_to_map != 0) begin
                     arr[reg_to_map] <= remap ? new_mapping : arr[reg_to_map];
+                    returned_mapping <= remap ? arr[reg_to_map] : 0;
+                    return_map <= remap ? 1 : 0;
                 end
 
             end

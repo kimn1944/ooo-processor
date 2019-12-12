@@ -81,10 +81,16 @@ module QUEUE_obj
         else if(clk) begin
             head       <= (deque & ~stall & (size > 0)) ? ((head < LENGTH - 1) ? head + 1 : 0) : head;
 
-            queue[tail] <= (enque & ~halt & (size < LENGTH)) ? enque_data : queue[tail];
-            tail        <= (enque & ~halt & (size < LENGTH)) ? ((tail < LENGTH - 1) ? tail + 1 : 0) : tail;
-
-            size <= (enque & ~halt & (size < LENGTH)) ? ((deque & ~stall & (size > 0)) ? size : size + 1) : ((deque & ~stall & (size > 0)) ? size - 1 : size);
+            if(INIT) begin
+                queue[tail] <= (enque & (size < LENGTH)) ? enque_data : queue[tail];
+                tail        <= (enque & (size < LENGTH)) ? ((tail < LENGTH - 1) ? tail + 1 : 0) : tail;
+                size <= (enque & (size < LENGTH)) ? ((deque & ~stall & (size > 0)) ? size : size + 1) : ((deque & ~stall & (size > 0)) ? size - 1 : size);
+            end
+            else begin
+                queue[tail] <= (enque & ~halt & (size < LENGTH)) ? enque_data : queue[tail];
+                tail        <= (enque & ~halt & (size < LENGTH)) ? ((tail < LENGTH - 1) ? tail + 1 : 0) : tail;
+                size <= (enque & ~halt & (size < LENGTH)) ? ((deque & ~stall & (size > 0)) ? size : size + 1) : ((deque & ~stall & (size > 0)) ? size - 1 : size);
+            end
         end
 
         `ifdef QUEUE
