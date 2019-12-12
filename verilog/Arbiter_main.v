@@ -34,6 +34,26 @@ always @(*) begin
         grant[15] : granted = 15;
         default : granted = 16;
     endcase
+
+    // case(grant)
+    //     1 : granted = 0;
+    //     2 : granted = 1;
+    //     4 : granted = 2;
+    //     8 : granted = 3;
+    //     16 : granted = 4;
+    //     32 : granted = 5;
+    //     64 : granted = 6;
+    //     128 : granted = 7;
+    //     256 : granted = 8;
+    //     512 : granted = 9;
+    //     1024 : granted = 10;
+    //     2048 : granted = 11;
+    //     4096 : granted = 12;
+    //     8192 : granted = 13;
+    //     16384 : granted = 14;
+    //     32768 : granted = 15;
+    //     default : granted = 16;
+    // endcase
 end
 //assign granted = grant[0] ? 0 :(grant[1] ? 1 : (grant[2] ? 2 : (grant[3] ? 3: (grant[4] ? 4 : (grant[5]? 5: (grant[6] ? 6 : (grant[7] ? 7 : (grant[8] ? 8 : (grant[9] ? 9: (grant[10] ? 10 : (grant[11] ? 11: (grant[12] ? 12: (grant[13] ? 13 : (grant[14] ? 14 : (grant[15] ? 15: 16))))))))))))));
 
@@ -47,7 +67,7 @@ Arbiter Arbiter0(
     .G0(grant[0]),
     .G1(grant[1]),
     .G2(grant[2]),
-    .G3(grant[3]),    
+    .G3(grant[3]),
 
     //parent side
     .GG(GG0), //group grant
@@ -64,11 +84,11 @@ Arbiter Arbiter1(
     .G0(grant[4]),
     .G1(grant[5]),
     .G2(grant[6]),
-    .G3(grant[7]),    
+    .G3(grant[7]),
 
     //parent side
     .GG(GG1), //group grant
-    .GR(GR2) //group request
+    .GR(GR1) //group request
 );
 
 Arbiter Arbiter2(
@@ -81,7 +101,7 @@ Arbiter Arbiter2(
     .G0(grant[8]),
     .G1(grant[9]),
     .G2(grant[10]),
-    .G3(grant[11]),    
+    .G3(grant[11]),
 
     //parent side
     .GG(GG2), //group grant
@@ -98,7 +118,7 @@ Arbiter Arbiter3(
     .G0(grant[12]),
     .G1(grant[13]),
     .G2(grant[14]),
-    .G3(grant[15]),    
+    .G3(grant[15]),
 
     //parent side
     .GG(GG3), //group grant
@@ -116,7 +136,7 @@ Arbiter parent0(
     .G0(GG0),
     .G1(GG1),
     .G2(GG2),
-    .G3(GG3),    
+    .G3(GG3),
 
     //parent side
     .GG(1), //group grant

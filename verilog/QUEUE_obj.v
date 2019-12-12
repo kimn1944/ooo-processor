@@ -23,6 +23,8 @@ module QUEUE_obj
 
       input deque,
       output reg [WIDTH - 1:0] deque_data,
+
+      input [5:0] r_mapping [31:0],
       output reg halt);
 
     integer i;
@@ -38,6 +40,9 @@ module QUEUE_obj
         assign halt = (size == LENGTH);
     end
 
+    reg [63:0] temp;
+    integer j;
+
     assign deque_data = (deque & ~stall & (size > 0)) ? queue[head] : 0;
     always @(posedge clk or negedge reset) begin
         if(!reset) begin
@@ -51,7 +56,7 @@ module QUEUE_obj
             end
             else begin
                 for(i = 0; i < LENGTH; i = i + 1) begin
-                    queue[i] = 32 + i;
+                    queue[i] = LENGTH + i;
                 end
                 head <= 0;
                 tail <= LENGTH - 1;
@@ -59,24 +64,41 @@ module QUEUE_obj
             end
         end
         else if(flush) begin
-            if(SPECIAL) begin
-                queue[i] = queue[head];
-                for(i = 1; i < LENGTH; i = i + 1) begin
-                    queue[i] = 0;
+            if(INIT) begin
+                temp = {64{1'b1}};
+                for(i = 0; i < 32; i = i + 1) begin
+                    temp[r_mapping[i]] = 0;
+                end
+                j = 0;
+                for(i = 0; i < 64; i = i + 1) begin
+                    if(temp[i] == 1) begin
+                        queue[j] = i;
+                        j = j + 1;
+                    end
                 end
                 head <= 0;
-                tail <= 1;
-                size <= 1;
+                tail <= LENGTH - 1;
+                size <= LENGTH;
             end
             else begin
-                for(i = 0; i < LENGTH; i = i + 1) begin
-                    queue[i] = 0;
+                if(SPECIAL) begin
+                    queue[i] = queue[head];
+                    for(i = 1; i < LENGTH; i = i + 1) begin
+                        queue[i] = 0;
+                    end
+                    head <= 0;
+                    tail <= 1;
+                    size <= 1;
                 end
-                head <= 0;
-                tail <= 0;
-                size <= 0;
+                else begin
+                    for(i = 0; i < LENGTH; i = i + 1) begin
+                        queue[i] = 0;
+                    end
+                    head <= 0;
+                    tail <= 0;
+                    size <= 0;
+                end
             end
-
         end
         else if(clk) begin
             head       <= (deque & ~stall & (size > 0)) ? ((head < LENGTH - 1) ? head + 1 : 0) : head;

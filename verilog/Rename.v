@@ -27,6 +27,7 @@ module Rename (
     //from RRAT
     input rrat_free,
     input [5:0] rrat_free_reg,
+    input [5:0] rrat_map [31:0],
 
     //halt signals
     input issue_halt,
@@ -88,6 +89,8 @@ QUEUE_obj #(.INIT(1), .LENGTH(32), .WIDTH(6)) freelist (
 
       .deque(id_RegWr_flag | id_ld_flag),
       .deque_data(free_reg),
+
+      .r_mapping(rrat_map),
       .halt(free_halt));
 
 

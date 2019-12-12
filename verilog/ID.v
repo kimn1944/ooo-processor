@@ -99,6 +99,7 @@ assign halt = !Request_Alt_PC && halt_IF;
     .enque_data({instr_pc_in, instr1_in}),
     .deque(1),
     .deque_data(deque_data),
+    .r_mapping(),
     .halt(halt_IF));
 
     wire link;
@@ -180,6 +181,7 @@ assign halt = !Request_Alt_PC && halt_IF;
     .enque_data(rename_entry),
     .deque(1),
     .deque_data(rename_queue_out),
+    .r_mapping(),
     .halt(rename_halt));
 
     wire [4:0] keyS;
@@ -369,6 +371,7 @@ assign rtval1 = rtRawVal1;
     assign Instr1_IN         = rename_out[81:50];
     assign Instr_PC_IN       = rename_out[49:18];
     assign Instr_PC_Plus4_IN = rename_out[49:18] + 32'd4;
+
     Rename #() Rename
         (.CLK(CLK),
         .RESET(RESET),
@@ -384,8 +387,9 @@ assign rtval1 = rtRawVal1;
 
         .frat_my_map(F_R),
 
-        .rrat_free(return_map), 
+        .rrat_free(return_map),
         .rrat_free_reg(returned_mapping),
+        .rrat_map(R_F),
 
         .issue_halt(0),
         .lsq_halt(0),
@@ -434,6 +438,7 @@ assign rtval1 = rtRawVal1;
 
 `endif
 //******************************************************************************
+
 
 	 reg FORCE_FREEZE;
 	 reg INHIBIT_FREEZE;
