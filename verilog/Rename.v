@@ -56,6 +56,10 @@ module Rename (
     output reg entry_allocate_ROB,
     output reg [185:0] entry_ROB,
 
+    //
+    output reg [4:0] oldA,
+    output reg [4:0] oldB,
+    output reg [4:0] oldC,
     // stalling the rename queue
     output halt_rename_queue,
 
@@ -65,18 +69,18 @@ reg  [5:0] free_reg;
 wire id_ld_flag;
 wire id_st_flag;
 wire id_RegWr_flag;
-
+wire free_halt;
 
 assign id_ld_flag = id_control[99];
 assign id_st_flag = id_control[98];
 assign id_RegWr_flag = id_control[96] & (id_instr != 0);
 
-assign halt_rename_queue = issue_halt | STALL | rob_halt | lsq_halt | (free_reg == 0);
+assign halt_rename_queue = issue_halt | STALL | rob_halt | lsq_halt;
 
 QUEUE_obj #(.INIT(1), .LENGTH(32), .WIDTH(6)) freelist (
       .clk(CLK),
       .reset(RESET),
-      .stall(1),
+      .stall(STALL),
       .flush(FLUSH),
 
       .enque(rrat_free),
@@ -84,7 +88,7 @@ QUEUE_obj #(.INIT(1), .LENGTH(32), .WIDTH(6)) freelist (
 
       .deque(id_RegWr_flag | id_ld_flag),
       .deque_data(free_reg),
-      .halt());
+      .halt(free_halt));
 
 
 always @(negedge CLK or negedge RESET) begin
@@ -96,7 +100,10 @@ always @(negedge CLK or negedge RESET) begin
         busy <= 0;
         instr_num <= 0;
         remap_FRAT <= 0;
-    end else if(!CLK & !(issue_halt | STALL | rob_halt | lsq_halt | (free_reg == 0))) begin
+        oldA <= 0;
+        oldB <= 0;
+        oldC <= 0;
+    end else if(!CLK & !(issue_halt | STALL | rob_halt | lsq_halt)) begin
         entry_allocate_ROB <= 1;
         instr_num <= instr_num + 1;
         entry_ROB[185:18] <= {id_control, id_instr, id_instrpc};
@@ -120,12 +127,19 @@ always @(negedge CLK or negedge RESET) begin
 
         busy[frat_my_map[id_RegWr]] <= (id_RegWr_flag | id_ld_flag ) ? 1 : busy[frat_my_map[id_RegWr]];
         busy[exe_busyclear_reg] <= exe_busyclear_flag ? 0 : busy[exe_busyclear_reg];
+
+        oldA <= id_RegA;
+        oldB <= id_RegB;
+        oldC <= id_RegWr;
     end else begin
         entry_allocate_ROB <= 0;
         entry_allocate_issue <= 0;
         entry_ld_lsq <= 0;
         entry_st_lsq <= 0;
         remap_FRAT <= 0;
+        oldA <= 0;
+        oldB <= 0;
+        oldC <= 0;
     end
 end
 

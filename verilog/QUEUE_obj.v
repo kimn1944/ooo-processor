@@ -31,9 +31,14 @@ module QUEUE_obj
     integer size;
     reg [WIDTH - 1:0] queue [LENGTH - 1:0];
 
-    assign halt = (size == LENGTH);
-    assign deque_data = (deque & ~stall & (size > 0)) ? queue[head] : 0;
+    if(INIT) begin
+        assign halt = (size == 0);
+    end
+    else begin
+        assign halt = (size == LENGTH);
+    end
 
+    assign deque_data = (deque & ~stall & (size > 0)) ? queue[head] : 0;
     always @(posedge clk or negedge reset) begin
         if(!reset) begin
             if(INIT == 0) begin

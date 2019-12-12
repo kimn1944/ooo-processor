@@ -174,7 +174,7 @@ assign halt = !Request_Alt_PC && halt_IF;
     QUEUE_obj #(.SPECIAL(1), .LENGTH(8), .WIDTH(183), .TAG("Rename Queue")) rename_queue
     (.clk(CLK),
     .reset(RESET),
-    .stall(bubble != 0),
+    .stall(halt_rename_queue),
     .flush(Request_Alt_PC),
     .enque(1),
     .enque_data(rename_entry),
@@ -192,9 +192,9 @@ assign halt = !Request_Alt_PC && halt_IF;
     assign keyD = rename_queue_out[108:104];
     assign rq_instr_r = rename_queue_out[150:119];
     assign rq_ipc_r = rename_queue_out[182:151];
-    assign Instr1_IN         = rename_queue_out[150:119];
-    assign Instr_PC_IN       = rename_queue_out[182:151];
-    assign Instr_PC_Plus4_IN = rename_queue_out[182:151] + 32'd4;
+    // assign Instr1_IN         = rename_queue_out[150:119];
+    // assign Instr_PC_IN       = rename_queue_out[182:151];
+    // assign Instr_PC_Plus4_IN = rename_queue_out[182:151] + 32'd4;
 
 
 
@@ -279,19 +279,19 @@ assign rtval1 = rtRawVal1;
 
 
 	// assign WriteRegister1 = RegDst1?rd1:(link1?5'd31:rt1);
-  assign WriteRegister1 = keyD;
+  assign WriteRegister1 = oldC;
   assign MemWriteData1 = WriteRegisterRawVal1;
 
 	//OpA will always be rsval, although it might be unused.
 	assign OpA1 = link1?0:rsval1;
 	// assign RegA1 = link1?5'b00000:rs1;
-  assign RegA1 = keyS;
+  assign RegA1 = oldA;
 	//When we branch/jump and link, OpB needs to store return address
 	//Otherwise, if we have writeregister==rd, then rt is used for OpB.
 	//if writeregister!=rd, then writeregister ==rt, and we use immediate instead.
 	assign OpB1 = branch1 ? (link1 ? (Instr_PC_Plus4_IN+4) : rtval1) : (RegDst1 ? rtval1 : (sign_or_zero_Flag1 ? signExtended_immediate1 : zeroExtended_immediate1));
 	// assign RegB1 = RegDst1?rt1:5'd0;
-  assign RegB1 = keyT;
+  assign RegB1 = oldB;
 
 //******************************************************************************
 wire [5:0] F_R [31:0];
@@ -333,12 +333,12 @@ wire [31:0] REGS [63:0];
         .update(RegWrite1_IN),
         .regs(REGS));
 
-    assign rsRawVal1 = REGS[F_R[keyS]];
-    assign rtRawVal1 = REGS[F_R[keyT]];
-    assign WriteRegisterRawVal1 = REGS[F_R[keyD]];
-    // assign rsRawVal1 = REGS[mappedS];
-    // assign rtRawVal1 = REGS[mappedT];
-    // assign WriteRegisterRawVal1 = REGS[mappedD];
+    // assign rsRawVal1 = REGS[F_R[oldA]];
+    // assign rtRawVal1 = REGS[F_R[oldB]];
+    // assign WriteRegisterRawVal1 = REGS[F_R[oldC]];
+    assign rsRawVal1 = REGS[mappedS];
+    assign rtRawVal1 = REGS[mappedT];
+    assign WriteRegisterRawVal1 = REGS[mappedD];
 
     wire halt_rename_queue;
 
@@ -353,19 +353,19 @@ wire [31:0] REGS [63:0];
     wire [5:0] mappedS;
     wire [5:0] mappedT;
     wire [5:0] mappedD;
+    wire [4:0] oldA;
+    wire [4:0] oldB;
+    wire [4:0] oldC;
     assign mappedS = rename_out[5:0];
     assign mappedT = rename_out[11:6];
     assign mappedD = rename_out[17:12];
-    // assign Instr1_IN         = rename_out[81:50];
-    // assign Instr_PC_IN       = rename_out[49:18];
-    // assign Instr_PC_Plus4_IN = rename_out[49:18] + 32'd4;
-    // assign keyS = rename_out[118:114];
-    // assign keyT = rename_out[113:109];
-    // assign keyD = rename_out[108:104];
+    assign Instr1_IN         = rename_out[81:50];
+    assign Instr_PC_IN       = rename_out[49:18];
+    assign Instr_PC_Plus4_IN = rename_out[49:18] + 32'd4;
     Rename #() Rename
         (.CLK(CLK),
         .RESET(RESET),
-        .STALL(0),
+        .STALL(bubble != 0),
         .FLUSH(0),
 
         .id_instr(rq_instr_r),
@@ -401,6 +401,10 @@ wire [31:0] REGS [63:0];
 
         .entry_allocate_ROB(),
         .entry_ROB(rename_out), // need
+
+        .oldA(oldA),
+        .oldB(oldB),
+        .oldC(oldC),
 
         .halt_rename_queue(halt_rename_queue),
 
