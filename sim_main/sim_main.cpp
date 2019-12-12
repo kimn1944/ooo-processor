@@ -820,7 +820,7 @@ int main(int argc, char **argv)
 */
 			if(((nextInstructionAddr & 0xFFFFFF00) != 0xBFC00000) && (!read_register(28))) {
 				printf("!!!GP Tampering (==0) @ 0x%08x!!!\n", nextInstructionAddr);
-				duration = CLOCK_COUNTER;
+				// duration = CLOCK_COUNTER;
 			}
 
 			mem_request_clock();
