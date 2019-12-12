@@ -34,26 +34,6 @@ always @(*) begin
         grant[15] : granted = 15;
         default : granted = 16;
     endcase
-
-    // case(grant)
-    //     1 : granted = 0;
-    //     2 : granted = 1;
-    //     4 : granted = 2;
-    //     8 : granted = 3;
-    //     16 : granted = 4;
-    //     32 : granted = 5;
-    //     64 : granted = 6;
-    //     128 : granted = 7;
-    //     256 : granted = 8;
-    //     512 : granted = 9;
-    //     1024 : granted = 10;
-    //     2048 : granted = 11;
-    //     4096 : granted = 12;
-    //     8192 : granted = 13;
-    //     16384 : granted = 14;
-    //     32768 : granted = 15;
-    //     default : granted = 16;
-    // endcase
 end
 //assign granted = grant[0] ? 0 :(grant[1] ? 1 : (grant[2] ? 2 : (grant[3] ? 3: (grant[4] ? 4 : (grant[5]? 5: (grant[6] ? 6 : (grant[7] ? 7 : (grant[8] ? 8 : (grant[9] ? 9: (grant[10] ? 10 : (grant[11] ? 11: (grant[12] ? 12: (grant[13] ? 13 : (grant[14] ? 14 : (grant[15] ? 15: 16))))))))))))));
 

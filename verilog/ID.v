@@ -439,6 +439,21 @@ assign rtval1 = rtRawVal1;
 `endif
 //******************************************************************************
 
+integer temp;
+reg [15:0] ready;
+reg [15:0] grant;
+
+assign ready = Instr1_IN[31:16];
+Arbiter_main test (
+    .ready(ready),
+    .grant(grant),
+    .granted(temp));
+
+always @(posedge CLK) begin
+    $display("Granted int: %d", temp);
+    $display("Ready: %b", ready);
+    $display("Grant: %b", grant);
+end
 
 	 reg FORCE_FREEZE;
 	 reg INHIBIT_FREEZE;
