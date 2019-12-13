@@ -39,6 +39,8 @@ module Issue (
     output reg [31:0]   operandB1_exe,
     output reg [31:0]   MemWriteData_exe,
 
+    output integer      instr_num_exe,
+
     //from ROB
     input integer rob_instr_num,
 
@@ -87,7 +89,7 @@ wire [31:0] OpB1      = rename_issueinfo[168:137]; //sent immediates
 integer instr_out_index;
 integer empty_spot;
 integer i, j, k, l, m, n;
-integer instr_num [16:0];
+integer instr_num [15:0];
 //assign ready_q[0][0] = (broadcast_reg == ) or ready_que and instr_in; //add implementation for when instruction leave  
 
 wire [15:0] instr_ready = ready_q[0] & ready_q[1] & ready_q[2];
@@ -149,6 +151,8 @@ always @(posedge CLK or negedge RESET) begin
             Operand_q[0][empty_spot] <= (MapA == 0) ? OpA1 : 0;
             Operand_q[1][empty_spot] <= (MapB == 0) ? OpB1 : 0;
             Operand_q[2][empty_spot] <= 0;
+
+            instr_num[empty_spot]    <= rename_instr_num;
             //WriteRegister1 = RegDst1?rd1:(link1?5'd31:rt1);
         end
 
@@ -180,6 +184,7 @@ always @(posedge CLK or negedge RESET) begin
             Operand_q[0][instr_out_index]   <= 0;
             Operand_q[1][instr_out_index]   <= 0;
             Operand_q[2][instr_out_index]   <= 0;
+            instr_num_exe                   <= instr_num[instr_out_index];
         end else begin
             RegWr_exe       <= 0;
             instr_exe       <= 0;
