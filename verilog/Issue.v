@@ -130,7 +130,7 @@ end
 //updating ready queue and operand queue
 always @(posedge CLK or negedge RESET) begin
     if (!RESET or FLUSH) begin
-        empty_in_issue <= 0;
+        empty_in_issue <= 16'b1111111111111111;
         i = 0;
         ready_q[0] = 0;
         ready_q[1] = 0;
@@ -139,6 +139,8 @@ always @(posedge CLK or negedge RESET) begin
             Operand_q[0][i] = 0;
             Operand_q[1][i] = 0;
             Operand_q[2][i] = 0;
+            issue_q[i]      = 0;
+            instr_num[i]    = 0;
         end
     end else if (CLK and !STALL ) begin
         if (rename_enque and (empty_spot < 16)) begin
@@ -224,9 +226,9 @@ always @(negedge CLK or negedge RESET) begin
                     Operand_q[0][i] <= ((issue_q[i][5:0] == exe_broadcast_map) && (issue_q[i][5:0] != 0)) ? exe_broadcast_val : Operand_q[0][i];
                     Operand_q[1][i] <= ((issue_q[i][11:6] == exe_broadcast_map) && (issue_q[i][11:6] != 0)) ? exe_broadcast_val : Operand_q[1][i];
                     Operand_q[2][i] <= ((issue_q[i][17:12] == exe_broadcast_map) && (issue_q[i][17:12] != 0)) ? exe_broadcast_val : Operand_q[2][i];
-                    ready_q[0][i] <= (issue_q[i][5:0] == exe_broadcast_map) ? 1 : ready_q[0][i];
-                    ready_q[1][i] <= (issue_q[i][11:6] == exe_broadcast_map) ? 1 : ready_q[1][i];
-                    ready_q[2][i] <= (issue_q[i][17:12] == exe_broadcast_map) ? 1 : ready_q[2][i];
+                    ready_q[0][i] <= ((issue_q[i][5:0] == exe_broadcast_map) || (jump_flag && jr_flag)) ? 1 : ready_q[0][i];
+                    ready_q[1][i] <= ((issue_q[i][11:6] == exe_broadcast_map) || (jump_flag && jr_flag)) ? 1 : ready_q[1][i];
+                    ready_q[2][i] <= ((issue_q[i][17:12] == exe_broadcast_map) || (jump_flag && jr_flag)) ? 1 : ready_q[2][i];
                 end else begin
                 //we actually don't need this since we can check if item is not valid in issue queue with the empty_in_issue array, but just in case. 
                     Operand_q[0][i] <= 0;
