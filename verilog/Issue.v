@@ -6,7 +6,7 @@ module Issue (
 
     //from rename
     input rename_enque,
-    input interger rename_instr_num;
+    input integer rename_instr_num;
     input [185:0] rename_issueinfo,
     input [63:0] busy,
 
