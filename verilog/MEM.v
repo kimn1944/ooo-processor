@@ -1,21 +1,21 @@
 `include "config.v"
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date:    12:17:07 10/18/2013 
-// Design Name: 
-// Module Name:    MEM2 
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
+// Company:
+// Engineer:
 //
-// Dependencies: 
+// Create Date:    12:17:07 10/18/2013
+// Design Name:
+// Module Name:    MEM2
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
 //
-// Revision: 
+// Dependencies:
+//
+// Revision:
 // Revision 0.01 - File Created
-// Additional Comments: 
+// Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
 module MEM(
@@ -45,21 +45,14 @@ module MEM(
     output reg RegWrite1_OUT,
     //And what data
     output reg [31:0] WriteData1_OUT,
-	 
+
     output reg [31:0] data_write_2DM,
     output [31:0] data_address_2DM,
 	 output reg [1:0] data_write_size_2DM,
     input [31:0] data_read_fDM,
 	 output MemRead_2DM,
-	 output MemWrite_2DM
+	 output MemWrite_2DM);
 
-`ifdef HAS_FORWARDING
-    ,
-    output [31:0] WriteData1_async
-`endif
-
-    );
-	 
 	 //Variables for Memory Module Inputs/Outputs:
 	 //ALU_result == Memory Address to access
 	 //MemRead (obvious)
@@ -69,7 +62,7 @@ module MEM(
 	 wire [31:0] MemoryData;
 	 //wire [31:0] MemoryReadData;	//Data read in from memory (and merged appropriate if LWL, LWR)
 	 reg [31:0]	 data_read_aligned;
-	 
+
 	 //Word-aligned address for reads
      wire [31:0] MemReadAddress;
      //Not always word-aligned address for writes (SWR has issues with this)
@@ -77,30 +70,30 @@ module MEM(
 
 	 wire MemWrite;
 	 wire MemRead;
-	 
+
 	 wire [31:0] ALU_result;
-	 
+
 	 wire [5:0] ALU_Control;
-	 
+
     assign MemWrite = MemWrite1_IN;
     assign MemRead = MemRead1_IN;
     assign ALU_result = ALU_result1_IN;
     assign ALU_Control = ALU_Control1_IN;
     assign MemoryData = MemoryData1;
- 
+
 	 assign MemReadAddress = {ALU_result[31:2],2'b00};
-	 
+
 	 assign data_address_2DM = MemWrite?MemWriteAddress:MemReadAddress;	//Reads are always aligned; writes may be unaligned
-	 
+
 	 assign MemRead_2DM = MemRead;
     assign MemWrite_2DM = MemWrite;
-	 
-	 
+
+
      reg [31:0]WriteData1;
-     
+
 	 wire comment1;
 	 assign comment1 = 1;
-	 
+
 
 always @(data_read_fDM) begin
 	//$display("MEM Received:data_read_fDM=%x",data_read_fDM);
@@ -265,20 +258,20 @@ end
 
 `ifdef HAS_FORWARDING
 RegValue1 MemoryDataValue(
-    .ReadRegister1(WriteRegister1_IN), 
-    .RegisterData1(MemWriteData1_IN), 
-    .WriteRegister1stPri1(WriteRegister1_OUT), 
-    .WriteData1stPri1(WriteData1_OUT), 
-    .Valid1stPri1(RegWrite1_OUT), 
-    .Output1(MemoryData1), 
+    .ReadRegister1(WriteRegister1_IN),
+    .RegisterData1(MemWriteData1_IN),
+    .WriteRegister1stPri1(WriteRegister1_OUT),
+    .WriteData1stPri1(WriteData1_OUT),
+    .Valid1stPri1(RegWrite1_OUT),
+    .Output1(MemoryData1),
     .comment(1'b0)
     );
-	 
+
 	 assign WriteData1_async = WriteData1;
 `else
 assign MemoryData1 = MemWriteData1_IN;
 `endif
-	 
+
 	 /* verilator lint_off UNUSED */
 	 reg [31:0] Instr1_OUT;
 	 reg [31:0] Instr1_PC_OUT;
