@@ -147,10 +147,10 @@ always @(posedge CLK or negedge RESET) begin
     end else if (CLK and !STALL ) begin
         if (rename_enque and (empty_spot < 16)) begin
             empty_in_issue[empty_spot]   <= 0;
-            issue_q[empty_spot][137:0]               <= rename_issueinfo[137:0];
+            issue_q[empty_spot][137:0]   <= rename_issueinfo[137:0];
             ready_q[0][empty_spot] <= (MapA == 0) ? 1 : busy[MapA];//(jump_flag & jr_flag) ? 1 : (link_flag ? 0 :1);
             ready_q[1][empty_spot] <= (MapB == 0) ? 1 : busy[MapB];
-            ready_q[2][empty_spot] <= (RegDest_flag || link_flag || !MapWr) ? 1 : busy[MapWr]; //This is for Memwrite
+            ready_q[2][empty_spot] <= (RegDest_flag || link_flag || (MapWr == 0)) ? 1 : busy[MapWr]; //This is for Memwrite
 
             Operand_q[0][empty_spot] <= (MapA == 0) ? OpA1 : (busy[MapA] ? 0 : regvalue);
             Operand_q[1][empty_spot] <= (MapB == 0) ? OpB1 : (busy[MapB] ? 0 : physreg[MapB]);
