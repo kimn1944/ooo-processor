@@ -246,7 +246,7 @@ module ID(
     assign MemWriteData1 = WriteRegisterRawVal1;
 
     //OpA will always be rsval, although it might be unused.
-    assign OpA1 = rename_out[100] ? 0 : rsRawVal1;
+    assign OpA1 = (rename_out[100] & !rename_out[92]) ? 0 : rsRawVal1;
     // assign RegA1 = link1?5'b00000:rs1;
     assign RegA1 = oldA;
     //When we branch/jump and link, OpB needs to store return address
