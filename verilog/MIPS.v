@@ -64,8 +64,6 @@ module MIPS (
     wire [31:0] Instr_PC_IFID;
     wire [31:0] Instr_PC_Plus4_IFID;
     wire        STALL_IDIF;
-    wire        Request_Alt_PC_IDIF;
-    wire [31:0] Alt_PC_IDIF;
 
 
 //Connecting wires between IC and IF
@@ -121,7 +119,7 @@ module MIPS (
     wire        MemWrite1_IDEXE;
     wire [4:0]  ShiftAmount1_IDEXE;
 
-    wire [169:0] all_info;
+    wire [169:0] IF_all_info_EXE;
 
     wire halt;
 
@@ -134,14 +132,12 @@ module MIPS (
     .instr_pc_in(Instr_PC_IFID),
     .instr_pc_plus4_in(Instr_PC_IFID + 32'd4),
     .halt(halt),
-    .all_info(all_info),
+    .all_info_IF(IF_all_info_EXE),
     .flush(flush),
 //******************************************************************************
 		.WriteRegister1_IN(WriteRegister1_MEMWB),
 		.WriteData1_IN(WriteData1_MEMWB),
 		.RegWrite1_IN(RegWrite1_MEMWB),
-		.Alt_PC(Alt_PC_IDIF),
-		.Request_Alt_PC(Request_Alt_PC_IDIF),
 		.Instr1_OUT(Instr1_IDEXE),
         .Instr1_PC_OUT(Instr1_PC_IDEXE),
 		.OperandA1_OUT(OperandA1_IDEXE),
@@ -175,13 +171,15 @@ module MIPS (
     wire request_alt_pc;
     wire [31:0] alt_addr;
     wire flush;
+    wire [169:0] EXE_all_info_MEM;
 
 	EXE EXE(
     //******************************************************************************
-    .all_info(all_info),
+    .IF_all_info(IF_all_info_EXE),
     .Request_Alt_PC(request_alt_pc),
     .alt_addr(alt_addr),
     .flush(flush),
+    .all_info_MEM(EXE_all_info_MEM),
     //******************************************************************************
 		.CLK(CLK),
 		.RESET(RESET),
@@ -236,6 +234,9 @@ module MIPS (
     assign unused_d2 = block_write_fDM_valid;
 
     MEM MEM(
+//******************************************************************************
+        .EXE_all_info(EXE_all_info_MEM),
+//******************************************************************************
         .CLK(CLK),
         .RESET(RESET),
         .Instr1_IN(Instr1_EXEMEM),

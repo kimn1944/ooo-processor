@@ -28,7 +28,7 @@ module ID(
     input [31:0] instr_pc_plus4_in,
 
     output halt,
-    output reg [169:0] all_info,
+    output reg [169:0] all_info_IF,
     input flush,
 //******************************************************************************
 
@@ -38,11 +38,6 @@ module ID(
     input[31:0]WriteData1_IN,
     //Actually write to register file?
     input RegWrite1_IN,
-
-    //Alternate PC for next fetch (branch/jump destination)
-    output reg [31:0]Alt_PC,
-    //Actually use alternate PC
-    output reg Request_Alt_PC,
 
     //Instruction being passed to EXE [debug]
     output reg [31:0]Instr1_OUT,
@@ -83,7 +78,7 @@ module ID(
     wire [63:0] deque_data;
     wire halt_IF;
 
-    assign halt = !Request_Alt_PC && halt_IF;
+    assign halt = halt_IF;
 
     QUEUE_obj #(.LENGTH(8), .WIDTH(64)) decode_queue
     (.clk(CLK),
@@ -178,7 +173,7 @@ module ID(
 
     assign rename_entry = {constants, controls, instr_info, regs};
 
-    QUEUE_obj #(.SPECIAL(1), .LENGTH(8), .WIDTH(167), .TAG("Rename Queue")) rename_queue
+    QUEUE_obj #(.SPECIAL(0), .LENGTH(8), .WIDTH(167), .TAG("Rename Queue")) rename_queue
     (.clk(CLK),
     .reset(RESET),
     .stall(halt_rename_queue),
@@ -205,8 +200,6 @@ module ID(
 
 //******************************************************************************
 
-    wire			Request_Alt_PC1;	//Do we want to branch/jump?
-    wire	[31:0]	Alt_PC1;	//address to which we branch/jump
 
     wire [4:0]		RegA1;		//Register A
     wire [4:0]		RegB1;		//Register B
@@ -219,26 +212,6 @@ module ID(
     wire [31:0]    rsRawVal1;
     wire [31:0]    rtRawVal1;
 
-//Begin branch/jump calculation
-
-
-    NextInstructionCalculator NIA1 (
-        .Instr_PC_Plus4(Instr_PC_Plus4_IN),
-        .Instruction(Instr1_IN),
-        .Jump(rename_out[98]),
-        .JumpRegister(rename_out[92]),
-        .RegisterValue(rsRawVal1),
-        .NextInstructionAddress(Alt_PC1),
-    	  .Register(oldA));
-
-
-    compare branch_compare1 (
-        .Jump(rename_out[98]),
-        .OpA(OpA1),
-        .OpB(OpB1),
-        .Instr_input(Instr1_IN),
-        .taken(Request_Alt_PC1));
-    //End branch/jump calculation
 
 
     // assign WriteRegister1 = RegDst1?rd1:(link1?5'd31:rt1);
@@ -274,21 +247,21 @@ module ID(
         .remap(remap_FRAT),
         .new_map(R_F),
         .overwrite(0),
-        .returned_mapping(returned_mapping),
-        .return_map(return_map),
+        .returned_mapping(),
+        .return_map(),
         .my_map(F_R));
 
     TABLE_obj #() RRAT
         (.clk(CLK),
         .reset(RESET),
         .stall(0),
-        .reg_to_map(0),
-        .new_mapping(0),
-        .remap(0),
+        .reg_to_map(reg_to_map_FRAT),
+        .new_mapping(new_mapping),
+        .remap(remap_FRAT),
         .new_map(F_R),
         .overwrite(0),
-        .returned_mapping(),
-        .return_map(),
+        .returned_mapping(returned_mapping),
+        .return_map(return_map),
         .my_map(R_F));
 
     PHYS_REG #() PHYS_REG
@@ -331,7 +304,7 @@ module ID(
         (.CLK(CLK),
         .RESET(RESET),
         .STALL(bubble != 0),
-        .FLUSH(0),
+        .FLUSH(flush),
 
         .id_instr(rq_instr_r),
         .id_instrpc(rq_ipc_r),
@@ -403,8 +376,6 @@ module ID(
 
     always @(posedge CLK or negedge RESET) begin
         if(!RESET) begin
-            Alt_PC <= 0;
-            Request_Alt_PC <= 0;
             Instr1_OUT <= 0;
             OperandA1_OUT <= 0;
             OperandB1_OUT <= 0;
@@ -420,13 +391,11 @@ module ID(
             Instr1_PC_OUT <= 0;
             SYS <= 0;
             bubble <= 0;
-            all_info <= 0;
+            all_info_IF <= 0;
             $display("ID:RESET");
         end else begin
         bubble <= bubble + 2'b1;
         if(bubble == 0) begin
-            Alt_PC <= Alt_PC1;
-            Request_Alt_PC <= Request_Alt_PC1;
             Instr1_OUT <= Instr1_IN;
             OperandA1_OUT <= OpA1;
             OperandB1_OUT <= OpB1;
@@ -441,11 +410,9 @@ module ID(
             ShiftAmount1_OUT <= rename_out[137:133];
             Instr1_PC_OUT <= Instr_PC_IN;
             SYS <= rename_out[90];
-            all_info <= rename_out[169:0];
+            all_info_IF <= rename_out[169:0];
         end
         else begin
-            Alt_PC <= 0;
-            Request_Alt_PC <= 0;
             Instr1_OUT <= 0;
             OperandA1_OUT <= 0;
             OperandB1_OUT <= 0;
@@ -460,10 +427,10 @@ module ID(
             ShiftAmount1_OUT <= 0;
             Instr1_PC_OUT <= 0;
             SYS <= 0;
-            all_info <= 0;
+            all_info_IF <= 0;
         end
         if(1) begin
-            $display("ID1:Instr=%x,Instr_PC=%x,Req_Alt_PC=%d:Alt_PC=%x;SYS=%d()", Instr1_IN, Instr_PC_IN, Request_Alt_PC1, Alt_PC1, rename_out[90]);
+            $display("ID1:Instr=%x,Instr_PC=%x;SYS=%d()", Instr1_IN, Instr_PC_IN, rename_out[90]);
             $display("ID Flush: %x", flush);
             //$display("ID1:A:Reg[%d]=%x; B:Reg[%d]=%x; Write?%d to %d",RegA1, OpA1, RegB1, OpB1, (WriteRegister1!=5'd0)?RegWrite1:1'd0, WriteRegister1);
             //$display("ID1:ALU_Control=%x; MemRead=%d; MemWrite=%d (%x); ShiftAmount=%d",ALU_control1, MemRead1, MemWrite1, MemWriteData1, shiftAmount1);

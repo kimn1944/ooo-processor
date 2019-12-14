@@ -152,9 +152,9 @@ always @(posedge CLK or negedge RESET) begin
             ready_q[1][empty_spot] <= (MapB == 0) ? 1 : busy[MapB];
             ready_q[2][empty_spot] <= (RegDest_flag || link_flag || !MapWr) ? 1 : busy[MapWr]; //This is for Memwrite
 
-            Operand_q[0][empty_spot] <= (MapA == 0) ? OpA1 : 0;
-            Operand_q[1][empty_spot] <= (MapB == 0) ? OpB1 : 0;
-            Operand_q[2][empty_spot] <= 0;
+            Operand_q[0][empty_spot] <= (MapA == 0) ? OpA1 : (busy[MapA] ? 0 : regvalue);
+            Operand_q[1][empty_spot] <= (MapB == 0) ? OpB1 : (busy[MapB] ? 0 : physreg[MapB]);
+            Operand_q[2][empty_spot] <= busy[MapWr] ? 0 : ;
 
             instr_num[empty_spot]    <= rename_instr_num;
             //WriteRegister1 = RegDst1?rd1:(link1?5'd31:rt1);
