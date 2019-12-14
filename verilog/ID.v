@@ -166,9 +166,9 @@ module ID(
     assign shamt = deque_data[31:0][10:6];
     assign next_addr = jm ? (jreg ? 0 : jm_dest_imm) : br_dest_imm;
 
-    assign rs = (link & !jreg) ? 5'b00000 : deque_data[31:0][25:21];
+    assign rs = ((link & !jreg) | (jm & !jreg)) ? 5'b00000 : deque_data[31:0][25:21];
     assign rt = rgdst ? deque_data[31:0][20:16] : 5'd00000;
-    assign rd = rgdst ? deque_data[31:0][15:11] : (link ? 5'd31 : deque_data[31:0][20:16]);
+    assign rd = rgdst ? deque_data[31:0][15:11] : (link ? 5'd31 : (jm ? 0 : deque_data[31:0][20:16]));
     assign instr_info = {deque_data[63:32], deque_data[31:0]};
     assign regs = {rs, rt, rd};
     assign controls = {link, rgdst, jm, br, memrd, memwrt, has_imm, rgwrt, jreg, szextend, sys, alucon, hilo};
