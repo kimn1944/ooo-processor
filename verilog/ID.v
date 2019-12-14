@@ -23,11 +23,13 @@ module ID(
     input RESET,
 //******************************************************************************
 
-   input [31:0] instr1_in,
-   input [31:0] instr_pc_in,
-   input [31:0] instr_pc_plus4_in,
+    input [31:0] instr1_in,
+    input [31:0] instr_pc_in,
+    input [31:0] instr_pc_plus4_in,
 
-   output halt,
+    output halt,
+    output reg [169:0] all_info,
+    input flush,
 //******************************************************************************
 
     //Writeback stage [register to write]
@@ -87,7 +89,7 @@ module ID(
     (.clk(CLK),
     .reset(RESET),
     .stall(rename_halt),
-    .flush(Request_Alt_PC),
+    .flush(flush),
     .enque(1),
     .enque_data({instr_pc_in, instr1_in}),
     .deque(1),
@@ -180,7 +182,7 @@ module ID(
     (.clk(CLK),
     .reset(RESET),
     .stall(halt_rename_queue),
-    .flush(Request_Alt_PC),
+    .flush(flush),
     .enque(1),
     .enque_data(rename_entry),
     .deque(1),
@@ -375,6 +377,27 @@ module ID(
         .instr_num());
 
 //******************************************************************************
+    Decoder #(
+    .TAG("1")
+    )
+    Decoder1 (
+    .Instr(Instr1_IN),
+    .Instr_PC(Instr_PC_IN),
+    .Link(),
+    .RegDest(),
+    .Jump(),
+    .Branch(),
+    .MemRead(),
+    .MemWrite(),
+    .ALUSrc(),
+    .RegWrite(),
+    .JumpRegister(),
+    .SignOrZero(),
+    .Syscall(),
+    .ALUControl(),
+    .MultRegAccess(),   //Needed for out-of-order
+     .comment1(1)
+    );
 
     reg [1:0] bubble;
 
@@ -397,6 +420,7 @@ module ID(
             Instr1_PC_OUT <= 0;
             SYS <= 0;
             bubble <= 0;
+            all_info <= 0;
             $display("ID:RESET");
         end else begin
         bubble <= bubble + 2'b1;
@@ -417,6 +441,7 @@ module ID(
             ShiftAmount1_OUT <= rename_out[137:133];
             Instr1_PC_OUT <= Instr_PC_IN;
             SYS <= rename_out[90];
+            all_info <= rename_out[169:0];
         end
         else begin
             Alt_PC <= 0;
@@ -435,9 +460,11 @@ module ID(
             ShiftAmount1_OUT <= 0;
             Instr1_PC_OUT <= 0;
             SYS <= 0;
+            all_info <= 0;
         end
         if(1) begin
             $display("ID1:Instr=%x,Instr_PC=%x,Req_Alt_PC=%d:Alt_PC=%x;SYS=%d()", Instr1_IN, Instr_PC_IN, Request_Alt_PC1, Alt_PC1, rename_out[90]);
+            $display("ID Flush: %x", flush);
             //$display("ID1:A:Reg[%d]=%x; B:Reg[%d]=%x; Write?%d to %d",RegA1, OpA1, RegB1, OpB1, (WriteRegister1!=5'd0)?RegWrite1:1'd0, WriteRegister1);
             //$display("ID1:ALU_Control=%x; MemRead=%d; MemWrite=%d (%x); ShiftAmount=%d",ALU_control1, MemRead1, MemWrite1, MemWriteData1, shiftAmount1);
 			  end

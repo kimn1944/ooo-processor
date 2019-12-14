@@ -19,6 +19,13 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module EXE(
+//***************************//***************************//********************
+    input [169:0] all_info,
+    output reg Request_Alt_PC,
+    output reg [31:0] alt_addr,
+    output flush,
+//***************************//***************************//********************
+
     input CLK,
     input RESET,
 	 //Current instruction [debug]
@@ -85,6 +92,16 @@ assign new_HI=HI_new1;
 assign new_LO=LO_new1;
 
 
+//***************************//***************************//********************
+wire Request_Alt_PC1;
+compare branch_compare1 (
+    .Jump(all_info[98]),
+    .OpA(A1),
+    .OpB(B1),
+    .Instr_input(Instr1_IN),
+    .taken(Request_Alt_PC1));
+//***************************//***************************//********************
+
 ALU ALU1(
     .aluResult(ALU_result1),
     .HI_OUT(HI_new1),
@@ -104,30 +121,34 @@ wire [31:0] MemWriteData1;
 assign MemWriteData1 = MemWriteData1_IN;
 
 always @(posedge CLK or negedge RESET) begin
-	if(!RESET) begin
-		Instr1_OUT <= 0;
-		Instr1_PC_OUT <= 0;
-		ALU_result1_OUT <= 0;
-		WriteRegister1_OUT <= 0;
-		MemWriteData1_OUT <= 0;
-		RegWrite1_OUT <= 0;
-		ALU_Control1_OUT <= 0;
-		MemRead1_OUT <= 0;
-		MemWrite1_OUT <= 0;
-		$display("EXE:RESET");
-	end else if(CLK) begin
-       HI <= new_HI;
-       LO <= new_LO;
-            Instr1_OUT <= Instr1_IN;
-            Instr1_PC_OUT <= Instr1_PC_IN;
-            ALU_result1_OUT <= ALU_result1;
-            WriteRegister1_OUT <= WriteRegister1_IN;
-            MemWriteData1_OUT <= MemWriteData1;
-            RegWrite1_OUT <= RegWrite1_IN;
-            ALU_Control1_OUT <= ALU_Control1_IN;
-            MemRead1_OUT <= MemRead1_IN;
-            MemWrite1_OUT <= MemWrite1_IN;
-			if(comment1) begin
+  	if(!RESET) begin
+        Instr1_OUT <= 0;
+        Instr1_PC_OUT <= 0;
+        ALU_result1_OUT <= 0;
+        WriteRegister1_OUT <= 0;
+        MemWriteData1_OUT <= 0;
+        RegWrite1_OUT <= 0;
+        ALU_Control1_OUT <= 0;
+        MemRead1_OUT <= 0;
+        MemWrite1_OUT <= 0;
+        Request_Alt_PC <= 0;
+        $display("EXE:RESET");
+  	end else if(CLK) begin
+        HI <= new_HI;
+        LO <= new_LO;
+        Instr1_OUT <= Instr1_IN;
+        Instr1_PC_OUT <= Instr1_PC_IN;
+        ALU_result1_OUT <= ALU_result1;
+        WriteRegister1_OUT <= WriteRegister1_IN;
+        MemWriteData1_OUT <= MemWriteData1;
+        RegWrite1_OUT <= RegWrite1_IN;
+        ALU_Control1_OUT <= ALU_Control1_IN;
+        MemRead1_OUT <= MemRead1_IN;
+        MemWrite1_OUT <= MemWrite1_IN;
+        Request_Alt_PC <= Request_Alt_PC1;
+        alt_addr <= all_info[92] ? A1 : all_info[132:101];
+        flush <= Request_Alt_PC1;
+		if(comment1) begin
                 $display("EXE:Instr1=%x,Instr1_PC=%x,ALU_result1=%x; Write?%d to %d",Instr1_IN,Instr1_PC_IN,ALU_result1, RegWrite1_IN, WriteRegister1_IN);
                 //$display("EXE:ALU_Control1=%x; MemRead1=%d; MemWrite1=%d (Data:%x)",ALU_Control1_IN, MemRead1_IN, MemWrite1_IN, MemWriteData1);
                 //$display("EXE:OpA1=%x; OpB1=%x; HI=%x; LO=%x", A1, B1, new_HI,new_LO);
