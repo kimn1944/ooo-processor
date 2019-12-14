@@ -15,6 +15,14 @@ module Issue (
     input [5:0] exe_broadcast_map,
     input [31:0] exe_broadcast_val,
 
+    //from physreg
+    input [31:0] PhysReg [63:0],
+
+    //from mem stage
+    input mem_broadcast,
+    input [5:0] mem_broadcast_map,
+    input [31:0] mem_broadcast_val,
+
     //to execution
     output reg [5:0]    RegWr_exe,
     output reg [31:0]   instr_exe,
@@ -225,24 +233,33 @@ always @(negedge CLK or negedge RESET) begin
 
     end else if (!CLK and !STALL ) begin
         //matching exe broadcast reg with current reg
-        if (exe_broadcast) begin
+        if (exe_broadcast || mem_broadcast) begin
             for (i = 0; i < 16; i = i+1)begin
-                if ((empty_in_issue[i] != 1)) begin
+                if ((empty_in_issue[i] != 1) && exe_broadcast) begin
                     Operand_q[0][i] = ((issue_q[i][5:0] == exe_broadcast_map) && (issue_q[i][5:0] != 0) && (ready_q[0] != 1)) ? exe_broadcast_val : Operand_q[0][i];
                     Operand_q[1][i] = ((issue_q[i][11:6] == exe_broadcast_map) && (issue_q[i][11:6] != 0) && (ready_q[1] != 1)) ? exe_broadcast_val : Operand_q[1][i];
                     Operand_q[2][i] = ((issue_q[i][17:12] == exe_broadcast_map) && (issue_q[i][17:12] != 0) && (ready_q[2] != 1)) ? exe_broadcast_val : Operand_q[2][i];
                     ready_q[0][i] = (issue_q[i][5:0] == exe_broadcast_map) ? 1 : ready_q[0][i];
                     ready_q[1][i] = (issue_q[i][11:6] == exe_broadcast_map) ? 1 : ready_q[1][i];
                     ready_q[2][i] = (issue_q[i][17:12] == exe_broadcast_map) ? 1 : ready_q[2][i];
-                end else begin
-                //we actually don't need this since we can check if item is not valid in issue queue with the empty_in_issue array, but just in case.
-                    Operand_q[0][i] = 0;
-                    Operand_q[1][i] = 0;
-                    Operand_q[2][i] = 0;
-                    ready_q[0][i] = 0;
-                    ready_q[1][i] = 0;
-                    ready_q[2][i] = 0;
                 end
+
+                if ((empty_in_issue[i] != 1) && mem_broadcast) begin
+                    Operand_q[0][i] = ((issue_q[i][5:0] == mem_broadcast_map) && (issue_q[i][5:0] != 0) && (ready_q[0] != 1)) ? mem_broadcast_val : Operand_q[0][i];
+                    Operand_q[1][i] = ((issue_q[i][11:6] == mem_broadcast_map) && (issue_q[i][11:6] != 0) && (ready_q[1] != 1)) ? mem_broadcast_val : Operand_q[1][i];
+                    Operand_q[2][i] = ((issue_q[i][17:12] == mem_broadcast_map) && (issue_q[i][17:12] != 0) && (ready_q[2] != 1)) ? mem_broadcast_val : Operand_q[2][i];
+                    ready_q[0][i] = (issue_q[i][5:0] == mem_broadcast_map) ? 1 : ready_q[0][i];
+                    ready_q[1][i] = (issue_q[i][11:6] == mem_broadcast_map) ? 1 : ready_q[1][i];
+                    ready_q[2][i] = (issue_q[i][17:12] == mem_broadcast_map) ? 1 : ready_q[2][i];
+                end// else begin
+                // //we actually don't need this since we can check if item is not valid in issue queue with the empty_in_issue array, but just in case.
+                //     Operand_q[0][i] = 0;
+                //     Operand_q[1][i] = 0;
+                //     Operand_q[2][i] = 0;
+                //     ready_q[0][i] = 0;
+                //     ready_q[1][i] = 0;
+                //     ready_q[2][i] = 0;
+                // end
             end
         end
 

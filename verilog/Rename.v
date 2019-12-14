@@ -124,7 +124,7 @@ always @(negedge CLK or negedge RESET) begin
 
         entry_ld_lsq <= id_ld_flag;
         entry_st_lsq <= id_st_flag;
-        entry_lsq [169:18] <= {id_control, id_instr, id_instrpc};
+        entry_lsq[169:18] <= {id_control, id_instr, id_instrpc};
         entry_lsq[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
         entry_lsq[17:12] <= (id_ld_flag) ? free_reg : frat_my_map[id_RegWr];
 
