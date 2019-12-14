@@ -15,6 +15,14 @@ module Issue (
     input [5:0] exe_broadcast_map,
     input [31:0] exe_broadcast_val,
 
+    //from physreg
+    input [31:0] PhysReg [63:0],
+
+    //from mem stage
+    input mem_broadcast,
+    input [5:0] mem_broadcast_map,
+    input [31:0] mem_broadcast_val,
+
     //to execution
     output reg [5:0]    RegWr_exe,
     output reg [31:0]   instr_exe,
@@ -152,15 +160,9 @@ always @(posedge CLK or negedge RESET) begin
             ready_q[1][empty_spot] <= (MapB == 0) ? 1 : busy[MapB];
             ready_q[2][empty_spot] <= (RegDest_flag || link_flag || (MapWr == 0)) ? 1 : busy[MapWr]; //This is for Memwrite
 
-<<<<<<< HEAD
-            Operand_q[0][empty_spot] <= (MapA == 0) ? OpA1 : (busy[MapA] ? 0 : regvalue);
-            Operand_q[1][empty_spot] <= (MapB == 0) ? OpB1 : (busy[MapB] ? 0 : physreg[MapB]);
-            Operand_q[2][empty_spot] <= busy[MapWr] ? 0 : ;
-=======
             Operand_q[0][empty_spot] <= (MapA == 0) ? OpA1 : PhysReg[MapA];
             Operand_q[1][empty_spot] <= (MapB == 0) ? OpB1 : PhysReg[MapB];
             Operand_q[2][empty_spot] <= (RegDest_flag || link_flag || (MapWr == 0)) ? 0 : PhysReg[MapWr];
->>>>>>> 8b527f310110fec2d34b8e15bec0c29c7e170e39
 
             instr_num[empty_spot]    <= rename_instr_num;
             //WriteRegister1 = RegDst1?rd1:(link1?5'd31:rt1);
@@ -228,24 +230,33 @@ always @(negedge CLK or negedge RESET) begin
 
     end else if (!CLK and !STALL ) begin
         //matching exe broadcast reg with current reg
-        if (exe_broadcast) begin
+        if (exe_broadcast || mem_broadcast) begin
             for (i = 0; i < 16; i = i+1)begin
-                if ((empty_in_issue[i] != 1)) begin
+                if ((empty_in_issue[i] != 1) && exe_broadcast) begin
                     Operand_q[0][i] = ((issue_q[i][5:0] == exe_broadcast_map) && (issue_q[i][5:0] != 0) && (ready_q[0] != 1)) ? exe_broadcast_val : Operand_q[0][i];
                     Operand_q[1][i] = ((issue_q[i][11:6] == exe_broadcast_map) && (issue_q[i][11:6] != 0) && (ready_q[1] != 1)) ? exe_broadcast_val : Operand_q[1][i];
                     Operand_q[2][i] = ((issue_q[i][17:12] == exe_broadcast_map) && (issue_q[i][17:12] != 0) && (ready_q[2] != 1)) ? exe_broadcast_val : Operand_q[2][i];
                     ready_q[0][i] = (issue_q[i][5:0] == exe_broadcast_map) ? 1 : ready_q[0][i];
                     ready_q[1][i] = (issue_q[i][11:6] == exe_broadcast_map) ? 1 : ready_q[1][i];
                     ready_q[2][i] = (issue_q[i][17:12] == exe_broadcast_map) ? 1 : ready_q[2][i];
-                end else begin
-                //we actually don't need this since we can check if item is not valid in issue queue with the empty_in_issue array, but just in case.
-                    Operand_q[0][i] = 0;
-                    Operand_q[1][i] = 0;
-                    Operand_q[2][i] = 0;
-                    ready_q[0][i] = 0;
-                    ready_q[1][i] = 0;
-                    ready_q[2][i] = 0;
-                end
+                end 
+                
+                if ((empty_in_issue[i] != 1) && mem_broadcast) begin
+                    Operand_q[0][i] = ((issue_q[i][5:0] == mem_broadcast_map) && (issue_q[i][5:0] != 0) && (ready_q[0] != 1)) ? mem_broadcast_val : Operand_q[0][i];
+                    Operand_q[1][i] = ((issue_q[i][11:6] == mem_broadcast_map) && (issue_q[i][11:6] != 0) && (ready_q[1] != 1)) ? mem_broadcast_val : Operand_q[1][i];
+                    Operand_q[2][i] = ((issue_q[i][17:12] == mem_broadcast_map) && (issue_q[i][17:12] != 0) && (ready_q[2] != 1)) ? mem_broadcast_val : Operand_q[2][i];
+                    ready_q[0][i] = (issue_q[i][5:0] == mem_broadcast_map) ? 1 : ready_q[0][i];
+                    ready_q[1][i] = (issue_q[i][11:6] == mem_broadcast_map) ? 1 : ready_q[1][i];
+                    ready_q[2][i] = (issue_q[i][17:12] == mem_broadcast_map) ? 1 : ready_q[2][i];
+                end// else begin
+                // //we actually don't need this since we can check if item is not valid in issue queue with the empty_in_issue array, but just in case.
+                //     Operand_q[0][i] = 0;
+                //     Operand_q[1][i] = 0;
+                //     Operand_q[2][i] = 0;
+                //     ready_q[0][i] = 0;
+                //     ready_q[1][i] = 0;
+                //     ready_q[2][i] = 0;
+                // end
             end
         end
 
