@@ -1,5 +1,5 @@
 /*
-* File: PHYS_REG.v
+* File: Rename.v
 * Author: Nikita Kim & Celine Wang
 * Email: kimn1944@gmail.com
 * Date: 12/10/19

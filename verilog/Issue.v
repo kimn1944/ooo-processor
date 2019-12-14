@@ -1,3 +1,12 @@
+/*
+* File: Issue.v
+* Author: Nikita Kim & Celine Wang
+* Email: kimn1944@gmail.com
+* Date: 12/10/19
+*/
+
+`include "config.v"
+
 module Issue (
     input CLK,
     input RESET,
@@ -6,17 +15,20 @@ module Issue (
 
     //from rename
     input rename_enque,
-    input integer rename_instr_num;
+    input integer rename_instr_num,
     input [169:0] rename_issueinfo,
     input [63:0] busy,
 
     //from execution
-    input exe_broadcast;
+    input exe_broadcast,
     input [5:0] exe_broadcast_map,
     input [31:0] exe_broadcast_val,
 
     //from physreg
     input [31:0] PhysReg [63:0],
+
+    //from ROB
+    input integer rob_instr_num,
 
     //from mem stage
     input mem_broadcast,
@@ -49,8 +61,7 @@ module Issue (
 
     output integer      instr_num_exe,
 
-    //from ROB
-    input integer rob_instr_num,
+
 
     // //to ROB for branch misprediction
     // output miss_flag_rob,
@@ -60,7 +71,7 @@ module Issue (
     // output alt_pc_rob,
 
     //halt signal
-    output reg issue_halt);
+    output reg halt_rename);
     //do branch in execution
 
 reg [137:0] issue_q [15:0];
@@ -152,7 +163,7 @@ always @(posedge CLK or negedge RESET) begin
             issue_q[i]      = 0;
             instr_num[i]    = 0;
         end
-    end else if (CLK and !STALL ) begin
+    end else if (CLK & !STALL ) begin
         if (rename_enque && (empty_spot < 16)) begin
             empty_in_issue[empty_spot]   <= 0;
             issue_q[empty_spot][137:0]   <= rename_issueinfo[137:0];
@@ -229,9 +240,9 @@ always @(posedge CLK or negedge RESET) begin
 end
 
 always @(negedge CLK or negedge RESET) begin
-    if (!RESET or FLUSH) begin
+    if (!RESET | FLUSH) begin
 
-    end else if (!CLK and !STALL ) begin
+    end else if (!CLK & !STALL ) begin
         //matching exe broadcast reg with current reg
         if (exe_broadcast || mem_broadcast) begin
             for (i = 0; i < 16; i = i+1)begin

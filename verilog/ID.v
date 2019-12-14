@@ -373,6 +373,59 @@ module ID(
      .comment1(1)
     );
 
+    Issue Issue(
+        .CLK(CLK),
+        .RESET(RESET),
+        .STALL(STALL),
+        .FLUSH(flush),
+
+        // RENAME inputs
+        .rename_enque(0),
+        .rename_instr_num(0),
+        .rename_issueinfo(0),
+        .busy(0),
+
+        // EXE inputs
+        .exe_broadcast(0),
+        .exe_broadcast_map(0),
+        .exe_broadcast_val(0),
+
+        // phys reg input
+        .PhysReg(REGS),
+
+        // ROB inputs
+        .rob_instr_num(0),
+
+        // MEM inputs
+        .mem_broadcast(0),
+        .mem_broadcast_map(0),
+        .mem_broadcast_val(0),
+
+        // outputs to EXE
+        .RegWr_exe(),
+        .instr_exe(),
+        .instr_pc_exe(),
+        .shamt_exe(),
+        .ALU_con_exe(),
+        .RegWr_flag_exe(),
+        .MemWr_exe(),
+        .MemRd_exe(),
+        .branch_exe(),
+        .jump_exe(),
+        .jumpReg_exe(),
+        .regDest_exe(),
+        .link_exe(),
+        .hilo_exe(),
+        .sys_exe(),
+        .ALUSrc_exe(),
+        .alt_PC_exe(),
+        .operandA1_exe(),
+        .operandB1_exe(),
+        .MemWriteData_exe(),
+        .instr_num_exe(),
+
+        .halt_rename());
+
     reg [1:0] bubble;
 
     always @(posedge CLK or negedge RESET) begin
