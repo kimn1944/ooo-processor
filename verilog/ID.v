@@ -159,7 +159,7 @@ module ID(
     assign se_imm = {{16{immed[15]}}, immed};
     assign ze_imm = {{16{1'b0}}, immed};
 
-    assign opB = br ? (link ? ip4 : 0) : (rgdst ? 0 : (szextend ? se_imm : ze_imm));
+    assign opB = br ? (link ? ip4 + 32'd4 : 0) : (rgdst ? 0 : (szextend ? se_imm : ze_imm));
     assign shamt = deque_data[31:0][10:6];
     assign next_addr = jm ? (jreg ? 0 : jm_dest_imm) : br_dest_imm;
 
@@ -219,14 +219,15 @@ module ID(
     assign MemWriteData1 = WriteRegisterRawVal1;
 
     //OpA will always be rsval, although it might be unused.
-    assign OpA1 = (rename_out[100] & !rename_out[92]) ? 0 : rsRawVal1;
+    assign OpA1 = rsRawVal1;
     // assign RegA1 = link1?5'b00000:rs1;
     assign RegA1 = oldA;
     //When we branch/jump and link, OpB needs to store return address
     //Otherwise, if we have writeregister==rd, then rt is used for OpB.
     //if writeregister!=rd, then writeregister ==rt, and we use immediate instead.
-    //                    br                 link                                               rd
-    assign OpB1 = rename_out[97] ? (rename_out[100] ? (Instr_PC_Plus4_IN + 4) : rtRawVal1) : (rename_out[99] ? rtRawVal1 : rename_out[169:138]);
+    //                    br                 link               opB                                rd                         opB
+    // assign OpB1 = rename_out[97] ? (rename_out[100] ? rename_out[169:138] : rtRawVal1) : (rename_out[99] ? rtRawVal1 : rename_out[169:138]);
+    assign OpB1 = (rename_out[97] & rename_out[100]) ? rename_out[169:138] : (rename_out[99] ? rtRawVal1 : rename_out[169:138]);
     // assign RegB1 = RegDst1?rt1:5'd0;
     assign RegB1 = oldB;
 
