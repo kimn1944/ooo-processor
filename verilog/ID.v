@@ -269,9 +269,14 @@ module ID(
         (.clk(CLK),
         .reset(RESET),
         .stall(0),
-        .reg_to_update(F_R[WriteRegister1_IN]),
-        .new_value(WriteData1_IN),
-        .update(RegWrite1_IN),
+        // write exe
+        .reg_to_update1(F_R[WriteRegister1_IN]),
+        .new_value1(WriteData1_IN),
+        .update1(RegWrite1_IN),
+        // write mem
+        .reg_to_update2(0),
+        .new_value2(0),
+        .update2(0),
         .regs(REGS));
 
     assign rsRawVal1 = REGS[mappedS];
@@ -294,6 +299,7 @@ module ID(
     wire [4:0] oldA;
     wire [4:0] oldB;
     wire [4:0] oldC;
+    wire [63:0] busy;
     assign mappedS = rename_out[5:0];
     assign mappedT = rename_out[11:6];
     assign mappedD = rename_out[17:12];
@@ -324,8 +330,8 @@ module ID(
         .lsq_halt(0),
         .rob_halt(0),
 
-        .exe_busyclear_flag(),
-        .exe_busyclear_reg(),
+        .exe_busyclear_flag(return_map),
+        .exe_busyclear_reg(returned_mapping),
 
         .reg_to_map_FRAT(reg_to_map_FRAT),
         .new_mapping(new_mapping),
@@ -333,7 +339,7 @@ module ID(
 
         .entry_allocate_issue(),
         .entry_issue(),
-        .busy(),
+        .busy(busy),
 
         .entry_ld_lsq(),
         .entry_st_lsq(),
@@ -349,7 +355,6 @@ module ID(
         .halt_rename_queue(halt_rename_queue),
 
         .instr_num());
-
 //******************************************************************************
     Decoder #(
     .TAG("1")
@@ -383,7 +388,7 @@ module ID(
         .rename_enque(0),
         .rename_instr_num(0),
         .rename_issueinfo(0),
-        .busy(0),
+        .busy(busy),
 
         // EXE inputs
         .exe_broadcast(0),

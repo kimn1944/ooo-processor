@@ -106,7 +106,7 @@ always @(negedge CLK or negedge RESET) begin
         oldA <= 0;
         oldB <= 0;
         oldC <= 0;
-    end else if(!CLK & !(issue_halt | STALL | rob_halt | lsq_halt | free_halt)) begin
+    end else if(!CLK & !(issue_halt | STALL | rob_halt | lsq_halt | free_halt | FLUSH)) begin
         entry_allocate_ROB <= 1;
         instr_num <= instr_num + 1;
         entry_ROB[169:18] <= {id_control, id_instr, id_instrpc};
@@ -144,6 +144,12 @@ always @(negedge CLK or negedge RESET) begin
         oldA <= 0;
         oldB <= 0;
         oldC <= 0;
+        if(FLUSH) begin
+            busy <= 0;
+        end
+        else begin
+            busy[exe_busyclear_reg] <= exe_busyclear_flag ? 0 : busy[exe_busyclear_reg];
+        end
     end
 end
 
@@ -154,6 +160,7 @@ always @(negedge CLK) begin
     $display("RS: %d, RT: %d, RD: %d, MS: %d, MT: %d, MD: %d", id_RegA, id_RegB, id_RegWr, frat_my_map[id_RegA], frat_my_map[id_RegB], (id_ld_flag) ? free_reg : frat_my_map[id_RegWr]);
     $display("Reg Wrt?: %x, Load?: %x", id_RegWr_flag, id_ld_flag);
     $display("Reg to Map: %d, New Mapping: %d, Remap?: %x", id_RegWr, free_reg, id_RegWr_flag | id_ld_flag);
+    $display("Busy clear: %x, Busy clear reg: %d", exe_busyclear_flag, exe_busyclear_reg);
     $display("End Rename");
     `endif
 end

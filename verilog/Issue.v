@@ -114,12 +114,17 @@ integer instr_num [15:0];
 //assign ready_q[0][0] = (broadcast_reg == ) or ready_que and instr_in; //add implementation for when instruction leave
 
 wire [15:0] instr_ready;
-wire [15:0] instr_grant;
 assign issue_halt = (empty_spot == 16) | (empty_in_issue == 0);
+
+always @ (rob_instr_num or ready_q) begin
+    for (i = 0; i < 16; i = i + 1) begin
+        instr_ready[i] = ready_q[0][i] & ready_q[1][i] & ready_q[2][i];
+    end
+end
 
 Arbiter_main instr_Arbiter(
     .ready(instr_ready),
-    .grant(instr_grant),
+    .grant(),
     .granted(instr_out_index)
 );
 
