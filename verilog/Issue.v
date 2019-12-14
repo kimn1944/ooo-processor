@@ -18,7 +18,7 @@ module Issue (
     //to execution
     output reg [5:0]    RegWr_exe,
     output reg [31:0]   instr_exe,
-    output reg [31:0]   instru_pc_exe,
+    output reg [31:0]   instr_pc_exe,
 
     output reg [4:0]    shamt_exe,
     output reg [5:0]    ALU_con_exe,
@@ -131,7 +131,7 @@ end
 
 //updating ready queue and operand queue
 always @(posedge CLK or negedge RESET) begin
-    if (!RESET or FLUSH) begin
+    if (!RESET || FLUSH) begin
         empty_in_issue <= 16'b1111111111111111;
         i = 0;
         ready_q[0] = 0;
@@ -145,16 +145,16 @@ always @(posedge CLK or negedge RESET) begin
             instr_num[i]    = 0;
         end
     end else if (CLK and !STALL ) begin
-        if (rename_enque and (empty_spot < 16)) begin
+        if (rename_enque && (empty_spot < 16)) begin
             empty_in_issue[empty_spot]   <= 0;
             issue_q[empty_spot][137:0]               <= rename_issueinfo[137:0];
             ready_q[0][empty_spot] <= (MapA == 0) ? 1 : busy[MapA];//(jump_flag & jr_flag) ? 1 : (link_flag ? 0 :1);
             ready_q[1][empty_spot] <= (MapB == 0) ? 1 : busy[MapB];
-            ready_q[2][empty_spot] <= (RegDest_flag || link_flag || !MapWr) ? 1 : busy[MapWr]; //This is for Memwrite
+            ready_q[2][empty_spot] <= (RegDest_flag || link_flag || (MapWr == 0)) ? 1 : busy[MapWr]; //This is for Memwrite
 
-            Operand_q[0][empty_spot] <= (MapA == 0) ? OpA1 : 0;
-            Operand_q[1][empty_spot] <= (MapB == 0) ? OpB1 : 0;
-            Operand_q[2][empty_spot] <= 0;
+            Operand_q[0][empty_spot] <= (MapA == 0) ? OpA1 : PhysReg[MapA];
+            Operand_q[1][empty_spot] <= (MapB == 0) ? OpB1 : PhysReg[MapB];
+            Operand_q[2][empty_spot] <= (RegDest_flag || link_flag || (MapWr == 0)) ? 0 : PhysReg[MapWr];
 
             instr_num[empty_spot]    <= rename_instr_num;
             //WriteRegister1 = RegDst1?rd1:(link1?5'd31:rt1);
@@ -163,7 +163,7 @@ always @(posedge CLK or negedge RESET) begin
         if (instr_out_index != 16) begin
             RegWr_exe       <= issue_q[instr_out_index][17:12];
             instr_exe       <= issue_q[instr_out_index][81:50];
-            instru_pc_exe   <= issue_q[instr_out_index][49:18];
+            instr_pc_exe    <= issue_q[instr_out_index][49:18];
             shamt_exe       <= issue_q[instr_out_index][137:133];
             ALU_con_exe     <= issue_q[instr_out_index][89:84];
             RegWr_flag_exe  <= issue_q[instr_out_index][93];
@@ -192,7 +192,7 @@ always @(posedge CLK or negedge RESET) begin
         end else begin
             RegWr_exe       <= 0;
             instr_exe       <= 0;
-            instru_pc_exe   <= 0;
+            instr_pc_exe    <= 0;
             shamt_exe       <= 0;
             ALU_con_exe     <= 0;
             RegWr_exe       <= 0;
@@ -224,21 +224,21 @@ always @(negedge CLK or negedge RESET) begin
         //matching exe broadcast reg with current reg
         if (exe_broadcast) begin
             for (i = 0; i < 16; i = i+1)begin
-                if (empty_in_issue[i] != 1) begin
-                    Operand_q[0][i] <= ((issue_q[i][5:0] == exe_broadcast_map) && (issue_q[i][5:0] != 0)) ? exe_broadcast_val : Operand_q[0][i];
-                    Operand_q[1][i] <= ((issue_q[i][11:6] == exe_broadcast_map) && (issue_q[i][11:6] != 0)) ? exe_broadcast_val : Operand_q[1][i];
-                    Operand_q[2][i] <= ((issue_q[i][17:12] == exe_broadcast_map) && (issue_q[i][17:12] != 0)) ? exe_broadcast_val : Operand_q[2][i];
-                    ready_q[0][i] <= ((issue_q[i][5:0] == exe_broadcast_map) || (jump_flag && jr_flag)) ? 1 : ready_q[0][i];
-                    ready_q[1][i] <= ((issue_q[i][11:6] == exe_broadcast_map) || (jump_flag && jr_flag)) ? 1 : ready_q[1][i];
-                    ready_q[2][i] <= ((issue_q[i][17:12] == exe_broadcast_map) || (jump_flag && jr_flag)) ? 1 : ready_q[2][i];
+                if ((empty_in_issue[i] != 1)) begin
+                    Operand_q[0][i] = ((issue_q[i][5:0] == exe_broadcast_map) && (issue_q[i][5:0] != 0) && (ready_q[0] != 1)) ? exe_broadcast_val : Operand_q[0][i];
+                    Operand_q[1][i] = ((issue_q[i][11:6] == exe_broadcast_map) && (issue_q[i][11:6] != 0) && (ready_q[1] != 1)) ? exe_broadcast_val : Operand_q[1][i];
+                    Operand_q[2][i] = ((issue_q[i][17:12] == exe_broadcast_map) && (issue_q[i][17:12] != 0) && (ready_q[2] != 1)) ? exe_broadcast_val : Operand_q[2][i];
+                    ready_q[0][i] = (issue_q[i][5:0] == exe_broadcast_map) ? 1 : ready_q[0][i];
+                    ready_q[1][i] = (issue_q[i][11:6] == exe_broadcast_map) ? 1 : ready_q[1][i];
+                    ready_q[2][i] = (issue_q[i][17:12] == exe_broadcast_map) ? 1 : ready_q[2][i];
                 end else begin
                 //we actually don't need this since we can check if item is not valid in issue queue with the empty_in_issue array, but just in case.
-                    Operand_q[0][i] <= 0;
-                    Operand_q[1][i] <= 0;
-                    Operand_q[2][i] <= 0;
-                    ready_q[0][i] <= 0;
-                    ready_q[1][i] <= 0;
-                    ready_q[2][i] <= 0;
+                    Operand_q[0][i] = 0;
+                    Operand_q[1][i] = 0;
+                    Operand_q[2][i] = 0;
+                    ready_q[0][i] = 0;
+                    ready_q[1][i] = 0;
+                    ready_q[2][i] = 0;
                 end
             end
         end
