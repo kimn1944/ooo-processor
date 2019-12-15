@@ -25,11 +25,11 @@ module ID(
 
     input [31:0] instr1_in,
     input [31:0] instr_pc_in,
-    input [31:0] instr_pc_plus4_in,
 
     output halt,
-    output reg [169:0] all_info_IF,
+    output reg [33:0] all_info_IF,
     input flush,
+    input [5:0] MEM_new_mapping,
 //******************************************************************************
 
     //Writeback stage [register to write]
@@ -67,14 +67,11 @@ module ID(
     output reg [4:0]ShiftAmount1_OUT,
 
     //Tell the simulator to process a system call
-    output reg SYS,
-    //Tell fetch to stop advancing the PC, and wait.
-    output WANT_FREEZE);
+    output reg SYS);
 
 //******************************************************************************
     wire [31:0] Instr1_IN;
     wire [31:0] Instr_PC_IN;
-    wire [31:0] Instr_PC_Plus4_IN;
     wire [63:0] deque_data;
     wire halt_IF;
 
@@ -125,7 +122,7 @@ module ID(
     .Syscall(sys),
     .ALUControl(alucon),
     .MultRegAccess(hilo),   //Needed for out-of-order
-     .comment1(0)
+     .comment1(1)
     );
 
     wire rename_halt;
@@ -227,7 +224,8 @@ module ID(
     //if writeregister!=rd, then writeregister ==rt, and we use immediate instead.
     //                    br                 link               opB                                rd                         opB
     // assign OpB1 = rename_out[97] ? (rename_out[100] ? rename_out[169:138] : rtRawVal1) : (rename_out[99] ? rtRawVal1 : rename_out[169:138]);
-    assign OpB1 = (rename_out[97] & rename_out[100]) ? rename_out[169:138] : (rename_out[99] ? rtRawVal1 : rename_out[169:138]);
+    // assign OpB1 = (rename_entry_issue[97] & rename_entry_issue[100]) ? rename_entry_issue[169:138] : (rename_entry_issue[99] ? rtRawVal1 : rename_entry_issue[169:138]);
+    assign OpB1 = (oldB == 0) ? rename_entry_issue[169:138] : rtRawVal1;
     // assign RegB1 = RegDst1?rt1:5'd0;
     assign RegB1 = oldB;
 
@@ -256,9 +254,9 @@ module ID(
         (.clk(CLK),
         .reset(RESET),
         .stall(0),
-        .reg_to_map(WriteRegister1_IN),
-        .new_mapping(F_R[WriteRegister1_IN]),
-        .remap(RegWrite1_IN),
+        .reg_to_map(reg_to_map_FRAT),
+        .new_mapping(new_mapping),
+        .remap(remap_FRAT),
         .new_map(F_R),
         .overwrite(0),
         .returned_mapping(returned_mapping),
@@ -289,10 +287,8 @@ module ID(
     wire [5:0] new_mapping;
     wire remap_FRAT;
 
-    wire rrat_free;
-    wire [5:0] rrat_free_reg;
-
-    wire [169:0] rename_out;
+    wire [169:0] rename_entry_issue;
+    wire rename_entry_issue_allocate;
     wire [5:0] mappedS;
     wire [5:0] mappedT;
     wire [5:0] mappedD;
@@ -301,17 +297,16 @@ module ID(
     wire [4:0] oldC;
     wire [63:0] busy;
     integer instr_num;
-    assign mappedS = rename_out[5:0];
-    assign mappedT = rename_out[11:6];
-    assign mappedD = rename_out[17:12];
-    assign Instr1_IN         = rename_out[81:50];
-    assign Instr_PC_IN       = rename_out[49:18];
-    assign Instr_PC_Plus4_IN = rename_out[49:18] + 32'd4;
+    assign mappedS = rename_entry_issue[5:0];
+    assign mappedT = rename_entry_issue[11:6];
+    assign mappedD = rename_entry_issue[17:12];
+    assign Instr1_IN         = rename_entry_issue[81:50];
+    assign Instr_PC_IN       = rename_entry_issue[49:18];
 
     Rename #() Rename
         (.CLK(CLK),
         .RESET(RESET),
-        .STALL(bubble != 0),
+        .STALL(halt_rename),
         .FLUSH(flush),
 
         .id_instr(rq_instr_r),
@@ -331,15 +326,15 @@ module ID(
         .lsq_halt(0),
         .rob_halt(0),
 
-        .exe_busyclear_flag(return_map),
-        .exe_busyclear_reg(returned_mapping),
+        .exe_busyclear_flag(RegWrite1_IN),
+        .exe_busyclear_reg(F_R[WriteRegister1_IN]),
 
         .reg_to_map_FRAT(reg_to_map_FRAT),
         .new_mapping(new_mapping),
         .remap_FRAT(remap_FRAT),
 
-        .entry_allocate_issue(),
-        .entry_issue(),
+        .entry_allocate_issue(rename_entry_issue_allocate),
+        .entry_issue(rename_entry_issue),
         .busy(busy),
 
         .entry_ld_lsq(),
@@ -347,7 +342,7 @@ module ID(
         .entry_lsq(),
 
         .entry_allocate_ROB(),
-        .entry_ROB(rename_out), // need
+        .entry_ROB(), // need
 
         .oldA(oldA),
         .oldB(oldB),
@@ -357,47 +352,27 @@ module ID(
 
         .instr_num(instr_num));
 //******************************************************************************
-    Decoder #(
-    .TAG("1")
-    )
-    Decoder1 (
-    .Instr(Instr1_IN),
-    .Instr_PC(Instr_PC_IN),
-    .Link(),
-    .RegDest(),
-    .Jump(),
-    .Branch(),
-    .MemRead(),
-    .MemWrite(),
-    .ALUSrc(),
-    .RegWrite(),
-    .JumpRegister(),
-    .SignOrZero(),
-    .Syscall(),
-    .ALUControl(),
-    .MultRegAccess(),   //Needed for out-of-order
-     .comment1(1)
-    );
+
 
     Issue Issue(
         .CLK(CLK),
         .RESET(RESET),
-        .STALL(STALL),
+        .STALL(bubble != 0),
         .FLUSH(flush),
 
         // RENAME inputs
-        .rename_enque(rename_entry_allocate),
+        .rename_enque(rename_entry_issue_allocate),
         .rename_instr_num(instr_num),
-        .rename_issueinfo(rename_entry),
+        .rename_issueinfo(rename_entry_issue),
         .busy(busy),
         .rename_A(oldA),
         .rename_B(oldB),
         .rename_C(oldC),
 
         // EXE inputs
-        .exe_broadcast(RegWrite1_IN),
-        .exe_broadcast_map(F_R[WriteRegister1_IN]),
-        .exe_broadcast_val(WriteData1_IN),
+        .exe_broadcast(0),
+        .exe_broadcast_map(0),
+        .exe_broadcast_val(0),
 
         // phys reg input
         .PhysReg(REGS),
@@ -406,9 +381,9 @@ module ID(
         .rob_instr_num(0),
 
         // MEM inputs
-        .mem_broadcast(0),
-        .mem_broadcast_map(0),
-        .mem_broadcast_val(0),
+        .mem_broadcast(RegWrite1_IN),
+        .mem_broadcast_map(F_R[WriteRegister1_IN]),
+        .mem_broadcast_val(WriteData1_IN),
 
         // outputs to EXE
         .RegWr_exe(RegWr_exe),
@@ -472,6 +447,30 @@ module ID(
 
     reg [1:0] bubble;
 
+    /* verilator lint_off PINCONNECTEMPTY */
+        Decoder #(
+        .TAG("1")
+        )
+        Decoder1 (
+        .Instr(instr_exe),
+        .Instr_PC(instr_pc_exe),
+        .Link(),
+        .RegDest(),
+        .Jump(),
+        .Branch(),
+        .MemRead(),
+        .MemWrite(),
+        .ALUSrc(),
+        .RegWrite(),
+        .JumpRegister(),
+        .SignOrZero(),
+        .Syscall(),
+        .ALUControl(),
+        .MultRegAccess(),   //Needed for out-of-order
+         .comment1(1)
+        );
+        /* verilator lint_on PINCONNECTEMPTY */
+
     always @(posedge CLK or negedge RESET) begin
         if(!RESET) begin
             Instr1_OUT <= 0;
@@ -494,21 +493,21 @@ module ID(
         end else begin
         bubble <= bubble + 2'b1;
         if(bubble == 0) begin
-            Instr1_OUT <= Instr1_IN;
-            OperandA1_OUT <= OpA1;
-            OperandB1_OUT <= OpB1;
-            ReadRegisterA1_OUT <= RegA1;
-            ReadRegisterB1_OUT <= RegB1;
-            WriteRegister1_OUT <= WriteRegister1;
-            MemWriteData1_OUT <= MemWriteData1;
-            RegWrite1_OUT <= (WriteRegister1 != 5'd0) ? rename_out[93] : 1'd0;
-            ALU_Control1_OUT <= rename_out[89:84];
-            MemRead1_OUT <= rename_out[96];
-            MemWrite1_OUT <= rename_out[95];
-            ShiftAmount1_OUT <= rename_out[137:133];
-            Instr1_PC_OUT <= Instr_PC_IN;
-            SYS <= rename_out[90];
-            all_info_IF <= rename_out[169:0];
+            Instr1_OUT <= instr_exe;
+            OperandA1_OUT <= operandA1_exe;
+            OperandB1_OUT <= operandB1_exe;
+            ReadRegisterA1_OUT <= A_exe;
+            ReadRegisterB1_OUT <= B_exe;
+            WriteRegister1_OUT <= C_exe;
+            MemWriteData1_OUT <= MemWriteData_exe;
+            RegWrite1_OUT <= (C_exe != 5'd0) ? RegWr_flag_exe : 1'd0;
+            ALU_Control1_OUT <= ALU_con_exe;
+            MemRead1_OUT <= MemRd_exe;
+            MemWrite1_OUT <= MemWr_exe;
+            ShiftAmount1_OUT <= shamt_exe;
+            Instr1_PC_OUT <= instr_pc_exe;
+            SYS <= sys_exe;
+            all_info_IF <= {alt_PC_exe, jump_exe, jumpReg_exe};
         end
         else begin
             Instr1_OUT <= 0;
@@ -528,7 +527,7 @@ module ID(
             all_info_IF <= 0;
         end
         if(1) begin
-            $display("ID1:Instr=%x,Instr_PC=%x;SYS=%d()", Instr1_IN, Instr_PC_IN, rename_out[90]);
+            $display("ID1:Instr=%x,Instr_PC=%x;SYS=%d()", Instr1_IN, Instr_PC_IN, rename_entry_issue[90]);
             $display("ID Flush: %x", flush);
             //$display("ID1:A:Reg[%d]=%x; B:Reg[%d]=%x; Write?%d to %d",RegA1, OpA1, RegB1, OpB1, (WriteRegister1!=5'd0)?RegWrite1:1'd0, WriteRegister1);
             //$display("ID1:ALU_Control=%x; MemRead=%d; MemWrite=%d (%x); ShiftAmount=%d",ALU_control1, MemRead1, MemWrite1, MemWriteData1, shiftAmount1);

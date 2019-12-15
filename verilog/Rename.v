@@ -61,6 +61,10 @@ module Rename (
     output reg [4:0] oldA,
     output reg [4:0] oldB,
     output reg [4:0] oldC,
+    // output reg busyA,
+    // output reg busyB,
+    // output reg busyC,
+
     // stalling the rename queue
     output halt_rename_queue,
 
@@ -94,6 +98,9 @@ QUEUE_obj #(.INIT(1), .LENGTH(32), .WIDTH(6)) freelist (
       .r_mapping(rrat_map),
       .halt(free_halt));
 
+wire [5:0] busy_index_A;
+wire [5:0] busy_index_B;
+wire [5:0] busy_index_C;
 
 always @(negedge CLK or negedge RESET) begin
     if(!RESET) begin
@@ -107,6 +114,9 @@ always @(negedge CLK or negedge RESET) begin
         oldA <= 0;
         oldB <= 0;
         oldC <= 0;
+        // busyA <= 0;
+        // busyA <= 0;
+        // busyA <= 0;
     end else if(!CLK & !(issue_halt | STALL | rob_halt | lsq_halt | free_halt | FLUSH)) begin
         entry_allocate_ROB <= 1;
         instr_num <= instr_num + 1;
@@ -114,10 +124,13 @@ always @(negedge CLK or negedge RESET) begin
         entry_ROB[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
         entry_ROB[17:12] <= (id_RegWr_flag | id_ld_flag) ? free_reg : frat_my_map[id_RegWr];
 
-        entry_allocate_issue <= ~(id_ld_flag | id_st_flag);
+        entry_allocate_issue <= 1;
         entry_issue[169:18] <= {id_control, id_instr, id_instrpc};
         entry_issue[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
         entry_issue[17:12] <= (id_RegWr_flag | id_ld_flag) ? free_reg : frat_my_map[id_RegWr];
+        // busyA              <= busy[frat_my_map[id_RegA]];
+        // busyB              <= ;
+        // busyC              <= ;
 
         remap_FRAT <= id_RegWr_flag | id_ld_flag;
         new_mapping <= free_reg;
@@ -129,7 +142,7 @@ always @(negedge CLK or negedge RESET) begin
         entry_lsq[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
         entry_lsq[17:12] <= (id_ld_flag) ? free_reg : frat_my_map[id_RegWr];
 
-        busy[frat_my_map[id_RegWr]] <= (id_RegWr_flag | id_ld_flag) ? 1 : busy[frat_my_map[id_RegWr]];
+        busy[free_reg] <= ((id_RegWr_flag | id_ld_flag) & (free_reg != 0)) ? 1 : busy[free_reg];
         busy[exe_busyclear_reg] <= exe_busyclear_flag ? 0 : busy[exe_busyclear_reg];
 
         oldA <= id_RegA;
@@ -145,6 +158,9 @@ always @(negedge CLK or negedge RESET) begin
         oldA <= 0;
         oldB <= 0;
         oldC <= 0;
+        // busyA <= 0;
+        // busyB <= 0;
+        // busyC <= 0;
         if(FLUSH) begin
             busy <= 0;
         end
@@ -162,20 +178,27 @@ always @(negedge CLK) begin
         $display("Reg Wrt?: %x, Load?: %x", id_RegWr_flag, id_ld_flag);
         $display("Reg to Map: %d, New Mapping: %d, Remap?: %x", id_RegWr, free_reg, id_RegWr_flag | id_ld_flag);
         $display("Busy clear: %x, Busy clear reg: %d", exe_busyclear_flag, exe_busyclear_reg);
+        $display("IQ alloc: %x", entry_allocate_issue);
         $display("\t\t\t\tEnd Rename");
     `endif
 
     `ifdef BUSY
         $display("\t\t\t\tBUSY bits");
-        for(i = 0; i < 64; i = i + 1) begin
-            if((id_RegWr_flag | id_ld_flag)) begin
-                $display("busy[%d]: %d   <<<--- 1", i, busy[i]);
+        for(i = 0; i < 32; i = i + 1) begin
+            if((id_RegWr_flag | id_ld_flag) & (i == free_reg)) begin
+                $display("busy[%d]: %d   <<<--- 1        busy[%d]: %d", i, busy[i], i + 32, busy[i + 32]);
             end
-            else if(exe_busyclear_flag) begin
-                $display("busy[%d]: %d   <<<--- 0", i, busy[i]);
+            else if((id_RegWr_flag | id_ld_flag) & ((i + 32) == free_reg)) begin
+                $display("busy[%d]: %d                   busy[%d]: %d   <<<--- 1", i, busy[i], i + 32, busy[i + 32]);
+            end
+            else if(exe_busyclear_flag & (i == exe_busyclear_reg[4:0])) begin
+                $display("busy[%d]: %d   <<<--- 0        busy[%d]: %d", i, busy[i], i + 32, busy[i + 32]);
+            end
+            else if(exe_busyclear_flag & ((i + 32) == exe_busyclear_reg)) begin
+                $display("busy[%d]: %d                   busy[%d]: %d   <<<--- 0", i, busy[i], i + 32, busy[i + 32]);
             end
             else begin
-                $display("busy[%d]: %d", i, busy[i]);
+                $display("busy[%d]: %d                   busy[%d]: %d", i, busy[i], i + 32, busy[i + 32]);
             end
         end
         $display("\t\t\t\tEND BUSY");

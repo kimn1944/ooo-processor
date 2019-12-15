@@ -21,6 +21,7 @@
 module MEM(
 //******************************************************************************
     input [169:0] EXE_all_info,
+    output [5:0] new_mapping_RRAT,
 //******************************************************************************
     input CLK,
     input RESET,
@@ -273,6 +274,7 @@ always @(posedge CLK or negedge RESET) begin
 		WriteRegister1_OUT <= 0;
 		RegWrite1_OUT <= 0;
 		WriteData1_OUT <= 0;
+    new_mapping_RRAT <= 0;
 		$display("MEM:RESET");
 	end else if(CLK) begin
 			Instr1_OUT <= Instr1_IN;
@@ -280,9 +282,11 @@ always @(posedge CLK or negedge RESET) begin
 			WriteRegister1_OUT <= WriteRegister1_IN;
 			RegWrite1_OUT <= RegWrite1_IN;
 			WriteData1_OUT <= WriteData1;
+      new_mapping_RRAT <= EXE_all_info[17:12];
 			if(comment1) begin
 				$display("MEM:Instr1_OUT=%x,Instr1_PC_OUT=%x,WriteData1=%x; Write?%d to %d",Instr1_IN,Instr1_PC_IN,WriteData1, RegWrite1_IN, WriteRegister1_IN);
 				$display("MEM:data_address_2DM=%x; data_write_2DM(%d)=%x(%d); data_read_fDM(%d)=%x",data_address_2DM,MemWrite_2DM,data_write_2DM,data_write_size_2DM,MemRead_2DM,data_read_fDM);
+        $display("Memory data: %x, Alu Con: %x, Alu Res: %x", MemoryData, ALU_Control, ALU_result);
 			end
 	end
 end

@@ -16,11 +16,11 @@ module Arbiter (
 );
 
 initial begin
-    G0 <= 0;
-    G1 <= 0;
-    G2 <= 0;
-    G3 <= 0;
-    GR <= 0;
+    G0 = 0;
+    G1 = 0;
+    G2 = 0;
+    G3 = 0;
+    GR = 0;
 end
 
 assign GR = R0 | R1 | R2 | R3;

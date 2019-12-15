@@ -78,7 +78,7 @@ module Issue (
     // output alt_pc_rob,
 
     //halt signal
-    output reg halt_rename);
+    output halt_rename);
     //do branch in execution
 
 reg [137:0] issue_q [15:0];
@@ -91,38 +91,38 @@ wire [5:0] MapA     =  rename_issueinfo[5:0];
 wire [5:0] MapB     =  rename_issueinfo[11:6];
 
 wire [5:0] MapWr    =  rename_issueinfo[17:12];
-wire [31:0] Instr_pc = rename_issueinfo[49:18];
-wire [31:0] Instr   = rename_issueinfo[81:50];
+// wire [31:0] Instr_pc = rename_issueinfo[49:18];
+// wire [31:0] Instr   = rename_issueinfo[81:50];
 wire [1:0] hilo     = rename_issueinfo[83:82];
-wire [5:0] alu_con  = rename_issueinfo[89:84];
+// wire [5:0] alu_con  = rename_issueinfo[89:84];
 
-wire sys_flag       = rename_issueinfo[90];
-wire jr_flag        = rename_issueinfo[92];
+// wire sys_flag       = rename_issueinfo[90];
+// wire jr_flag        = rename_issueinfo[92];
 wire RegWr_flag     = rename_issueinfo[93];
-wire ALUSrc_flag    = rename_issueinfo[94];
+// wire ALUSrc_flag    = rename_issueinfo[94];
 wire MemWr_flag     = rename_issueinfo[95];
-wire MemRd_flag     = rename_issueinfo[96];
-wire branch_flag    = rename_issueinfo[97];
-wire jump_flag      = rename_issueinfo[98];
+// wire MemRd_flag     = rename_issueinfo[96];
+// wire branch_flag    = rename_issueinfo[97];
+// wire jump_flag      = rename_issueinfo[98];
 
 wire RegDest_flag   = rename_issueinfo[99];
 wire link_flag      = rename_issueinfo[100];
 
 
-wire [31:0] Alt_PC    = rename_issueinfo[132:101]; //sent jump/branch immediates
-wire [4:0] shamt      = rename_issueinfo[137:133];
+// wire [31:0] Alt_PC    = rename_issueinfo[132:101]; //sent jump/branch immediates
+// wire [4:0] shamt      = rename_issueinfo[137:133];
 wire [31:0] OpB1      = rename_issueinfo[169:138]; //sent immediates
 
 //reg  [31:0]MemWriteData;
 
 integer instr_out_index;
 integer empty_spot;
-integer i, j, k, l, m, n;
+integer i;
 integer instr_num [15:0];
 //assign ready_q[0][0] = (broadcast_reg == ) or ready_que and instr_in; //add implementation for when instruction leave
 
 wire [15:0] instr_ready;
-assign issue_halt = (empty_spot == 16) | (empty_in_issue == 0);
+assign halt_rename = (empty_spot == 16) | (empty_in_issue == 0);
 reg [15:0] mult_ready;
 
 always @ (rob_instr_num or ready_q) begin
@@ -146,11 +146,6 @@ Arbiter_main issue_Arbiter(
 initial begin
     empty_in_issue = 16'b1111111111111111;
     i = 0;
-    j = 0;
-    k = 0;
-    l = 0;
-    m = 0;
-    n = 0;
     ready_q[0] = 0;
     ready_q[1] = 0;
     ready_q[2] = 0;
@@ -182,21 +177,22 @@ always @(posedge CLK or negedge RESET) begin
             old_regs[0][i] = 0;
             old_regs[1][i] = 0;
             old_regs[2][i] = 0;
+            mult_ready[i]  = 1;
         end
-    end else if (CLK & !STALL ) begin
+    end else if (CLK) begin
         if (rename_enque && (empty_spot < 16)) begin
             if(hilo != 2'b00) begin
-                mult_ready[empty_spot] <= (rob_instr_num == rename_instr_num);
+                mult_ready[empty_spot] = (rob_instr_num == rename_instr_num);
             end
             empty_in_issue[empty_spot]   <= 0;
             issue_q[empty_spot][137:0]   <= rename_issueinfo[137:0];
-            ready_q[0][empty_spot] <= (MapA == 0) ? 1 : busy[MapA];//(jump_flag & jr_flag) ? 1 : (link_flag ? 0 :1);
-            ready_q[1][empty_spot] <= (MapB == 0) ? 1 : busy[MapB];
-            ready_q[2][empty_spot] <= (RegDest_flag || link_flag || (MapWr == 0)) ? 1 : busy[MapWr]; //This is for Memwrite
+            ready_q[0][empty_spot] <= (MapA == 0) ? 1 : ~busy[MapA];//(jum p_flag & jr _flag) ? 1 : (link_flag ? 0 :1);
+            ready_q[1][empty_spot] <= (MapB == 0) ? 1 : ~busy[MapB];
+            ready_q[2][empty_spot] <= ((RegDest_flag | link_flag | (MapWr == 0) | RegWr_flag) & !MemWr_flag) ? 1 : ~busy[MapWr]; //This is for Memwrite
 
             Operand_q[0][empty_spot] <= PhysReg[MapA];
             Operand_q[1][empty_spot] <= (MapB == 0) ? OpB1 : PhysReg[MapB];
-            Operand_q[2][empty_spot] <= (RegDest_flag || link_flag || (MapWr == 0)) ? 0 : PhysReg[MapWr];
+            Operand_q[2][empty_spot] <= ((RegDest_flag | link_flag | (MapWr == 0) | RegWr_flag) & !MemWr_flag) ? 0 : PhysReg[MapWr];
 
             old_regs[0][empty_spot] = rename_A;
             old_regs[1][empty_spot] = rename_B;
@@ -206,7 +202,7 @@ always @(posedge CLK or negedge RESET) begin
             //WriteRegister1 = RegDst1?rd1:(link1?5'd31:rt1);
         end
 
-        if (instr_out_index != 16) begin
+        if (instr_out_index != 16 & !STALL) begin
             RegWr_exe       <= issue_q[instr_out_index][17:12];
             instr_exe       <= issue_q[instr_out_index][81:50];
             instr_pc_exe    <= issue_q[instr_out_index][49:18];
@@ -223,7 +219,7 @@ always @(posedge CLK or negedge RESET) begin
             link_exe        <= issue_q[instr_out_index][100];
             hilo_exe        <= issue_q[instr_out_index][83:82];
             sys_exe         <= issue_q[instr_out_index][90];
-            ALUSrc_flag     <= issue_q[instr_out_index][94];
+            ALUSrc_exe      <= issue_q[instr_out_index][94];
             alt_PC_exe      <= issue_q[instr_out_index][132:101];
 
             A_exe           <= old_regs[0][instr_out_index];
@@ -237,7 +233,7 @@ always @(posedge CLK or negedge RESET) begin
             old_regs[0][instr_out_index]    <= 0;
             old_regs[1][instr_out_index]    <= 0;
             old_regs[2][instr_out_index]    <= 0;
-            
+
             empty_in_issue[instr_out_index] <= 1;
             issue_q[instr_out_index]        <= 0;
             ready_q[0][instr_out_index]     <= 0;
@@ -264,8 +260,12 @@ always @(posedge CLK or negedge RESET) begin
             link_exe        <= 0;
             hilo_exe        <= 0;
             sys_exe         <= 0;
-            ALUSrc_flag     <= 0;
+            ALUSrc_exe      <= 0;
             alt_PC_exe      <= 0;
+
+            A_exe           <= 0;
+            B_exe           <= 0;
+            C_exe           <= 0;
 
             operandA1_exe   <= 0;
             operandB1_exe   <= 0;
@@ -278,7 +278,7 @@ end
 always @(negedge CLK or negedge RESET) begin
     if (!RESET | FLUSH) begin
 
-    end else if (!CLK & !STALL ) begin
+    end else if (!CLK) begin
         for(i = 0; i < 16; i = i + 1) begin
             if(empty_in_issue[i] != 1) begin
                 if(issue_q[i][83:82] != 2'b00) begin
@@ -319,6 +319,25 @@ always @(negedge CLK or negedge RESET) begin
 
 
     end
+end
+
+always @(posedge CLK) begin
+    `ifdef ISSUE
+        $display("\t\t\t\tISSUE");
+        for(i = 0; i < 16; i = i + 1) begin
+            if((i == instr_out_index) & !STALL) begin
+                $display("[%b] %x from %x : %b = %b & %b & %b & %b  <<<---   OUT", ~empty_in_issue[i], issue_q[i][81:50], issue_q[i][49:18], instr_ready[i], ready_q[0][i], ready_q[1][i], ready_q[2][i], mult_ready[i]);
+            end
+            else if(i == empty_spot) begin
+                $display("[%b] %x from %x : %b = %b & %b & %b & %b  <<<---   %x", ~empty_in_issue[i], issue_q[i][81:50], issue_q[i][49:18], instr_ready[i], ready_q[0][i], ready_q[1][i], ready_q[2][i], mult_ready[i], rename_issueinfo[81:50]);
+            end
+            else begin
+                $display("[%b] %x from %x : %b = %b & %b & %b & %b", ~empty_in_issue[i], issue_q[i][81:50], issue_q[i][49:18], instr_ready[i], ready_q[0][i], ready_q[1][i], ready_q[2][i], mult_ready[i]);
+            end
+        end
+        $display("Instr OUT index: %d", instr_out_index);
+        $display("\t\t\t\tEND ISSUE\n");
+    `endif
 end
 
 

@@ -2,6 +2,7 @@
 //-----------------------------------------
 //            Pipelined MIPS
 //-----------------------------------------
+/* verilator lint_off BLKSEQ */
 module MIPS (
 
     input RESET,
@@ -62,8 +63,6 @@ module MIPS (
 //Connecting wires between IF and ID
     wire [31:0] Instr1_IFID;
     wire [31:0] Instr_PC_IFID;
-    wire [31:0] Instr_PC_Plus4_IFID;
-    wire        STALL_IDIF;
 
 
 //Connecting wires between IC and IF
@@ -94,7 +93,7 @@ module MIPS (
         .RESET(RESET),
         .Instr1_OUT(Instr1_IFID),
         .Instr_PC_OUT(Instr_PC_IFID),
-        .Instr_PC_Plus4(Instr_PC_Plus4_IFID),
+        .Instr_PC_Plus4(),
         .STALL(halt),
         .Request_Alt_PC(request_alt_pc),
         .Alt_PC(alt_addr),
@@ -119,7 +118,7 @@ module MIPS (
     wire        MemWrite1_IDEXE;
     wire [4:0]  ShiftAmount1_IDEXE;
 
-    wire [169:0] IF_all_info_EXE;
+    wire [33:0] IF_all_info_EXE;
 
     wire halt;
 
@@ -130,10 +129,10 @@ module MIPS (
 //******************************************************************************
     .instr1_in(Instr1_IFID),
     .instr_pc_in(Instr_PC_IFID),
-    .instr_pc_plus4_in(Instr_PC_IFID + 32'd4),
     .halt(halt),
     .all_info_IF(IF_all_info_EXE),
     .flush(flush),
+    .MEM_new_mapping(new_mapping_RRAT),
 //******************************************************************************
 		.WriteRegister1_IN(WriteRegister1_MEMWB),
 		.WriteData1_IN(WriteData1_MEMWB),
@@ -154,8 +153,7 @@ module MIPS (
 		.MemWrite1_OUT(MemWrite1_IDEXE),
 		.ShiftAmount1_OUT(ShiftAmount1_IDEXE),
 
-		.SYS(SYS),
-		.WANT_FREEZE(STALL_IDIF)
+		.SYS(SYS)
 	);
 
     wire [31:0] Instr1_EXEMEM;
@@ -233,9 +231,12 @@ module MIPS (
     assign unused_d1 = block_read_fDM_valid;
     assign unused_d2 = block_write_fDM_valid;
 
+    wire [5:0] new_mapping_RRAT;
+
     MEM MEM(
 //******************************************************************************
         .EXE_all_info(EXE_all_info_MEM),
+        .new_mapping_RRAT(new_mapping_RRAT),
 //******************************************************************************
         .CLK(CLK),
         .RESET(RESET),
@@ -267,5 +268,5 @@ module MIPS (
     assign BypassReg1_MEMID = WriteRegister1_EXEMEM;
     assign BypassValid1_MEMID = RegWrite1_EXEMEM;
 `endif
-
+/* verilator lint_on BLKSEQ */
 endmodule
