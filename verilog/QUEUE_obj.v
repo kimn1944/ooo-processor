@@ -116,11 +116,24 @@ module QUEUE_obj
         end
 
         `ifdef QUEUE
-            $display("Print %s", TAG);
-            $display("Queue: %x, Size: %d, Head: %d, Tail: %d", queue[0], size, (deque & ~stall & (size > 0)) ? ((head < LENGTH - 1) ? head + 1 : 0) : head, (enque & ~halt & (size < LENGTH)) ? ((tail < LENGTH - 1) ? tail + 1 : 0) : tail);
-            $display("Enq Data[%x]: %x, Deq Data[%x]: %x", enque, enque_data, deque, (deque & ~stall & (size > 0)) ? queue[head] : 0);
-            $display("Stall: %x, Halt: %x, Flush: %x, Reset: %x", stall, halt, flush, ~reset);
-            $display("END %s", TAG);
+            if(INIT) begin
+                $display("\t\t\t\tFree List");
+                $display("Queue: %x, Size: %d, Head: %d, Tail: %d", queue[0], size, (deque & ~stall & (size > 0)) ? ((head < LENGTH - 1) ? head + 1 : 0) : head, (enque & ~halt & (size < LENGTH)) ? ((tail < LENGTH - 1) ? tail + 1 : 0) : tail);
+                $display("Enq Data[%x]: %x, Deq Data[%x]: %x", enque, enque_data, deque, (deque & ~stall & (size > 0)) ? queue[head] : 0);
+                $display("Stall: %x, Halt: %x, Flush: %x, Reset: %x", stall, halt, flush, ~reset);
+                for(i = 0; i < LENGTH; i = i + 1) begin
+                    if(i == head) begin
+                        $display("Free List[%d]: %d   <<<--- HEAD", i, queue[i]);
+                    end
+                    else if(i == tail) begin
+                        $display("Free List[%d]: %d   <<<--- TAIL", i, queue[i]);
+                    end
+                    else begin
+                        $display("Free List[%d]: %d", i, queue[i]);
+                    end
+                end
+                $display("\t\t\t\tEND Free List\n");
+            end
         `endif
     end
 

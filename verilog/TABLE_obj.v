@@ -30,7 +30,7 @@ module TABLE_obj
 
     assign my_map = arr;
 
-    always @(posedge clk or negedge reset) begin
+    always @(negedge clk or negedge reset) begin
         if(!reset) begin
             for(i = 0; i < 32; i = i + 1) begin
                 arr[i] = i;
@@ -50,11 +50,16 @@ module TABLE_obj
             end
         end
         `ifdef TABLE
-            $display("%s", tag);
-            $display("Reg to remap: %x, New mapping: %x", reg_to_map, new_mapping);
-            $display("Remap: %x, Overwrite: %x", remap, overwrite);
-            $display("Arr[0]: %d", arr[0]);
-            $display("End %s", tag);
+            $display("\t\t\t\t%s", tag);
+            for(i = 0; i < 32; i = i + 1) begin
+                if((i == reg_to_map) & remap) begin
+                    $display("%s[%d]: %d   <<<--- %d", tag, i, arr[i], new_mapping);
+                end
+                else begin
+                    $display("%s[%d]: %d", tag, i, arr[i]);
+                end
+            end
+            $display("\t\t\t\tEnd %s\n", tag);
         `endif
     end
 

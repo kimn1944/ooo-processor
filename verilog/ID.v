@@ -252,7 +252,7 @@ module ID(
         .return_map(),
         .my_map(F_R));
 
-    TABLE_obj #() RRAT
+    TABLE_obj #(.tag("RRAT")) RRAT
         (.clk(CLK),
         .reset(RESET),
         .stall(0),

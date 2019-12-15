@@ -71,6 +71,7 @@ wire id_ld_flag;
 wire id_st_flag;
 wire id_RegWr_flag;
 wire free_halt;
+integer i;
 
 assign id_ld_flag = id_control[14];
 assign id_st_flag = id_control[13];
@@ -111,12 +112,12 @@ always @(negedge CLK or negedge RESET) begin
         instr_num <= instr_num + 1;
         entry_ROB[169:18] <= {id_control, id_instr, id_instrpc};
         entry_ROB[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
-        entry_ROB[17:12] <= id_RegWr_flag ? free_reg : frat_my_map[id_RegWr];
+        entry_ROB[17:12] <= (id_RegWr_flag | id_ld_flag) ? free_reg : frat_my_map[id_RegWr];
 
         entry_allocate_issue <= ~(id_ld_flag | id_st_flag);
         entry_issue[169:18] <= {id_control, id_instr, id_instrpc};
         entry_issue[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
-        entry_issue[17:12] <= id_RegWr_flag ? free_reg : frat_my_map[id_RegWr];
+        entry_issue[17:12] <= (id_RegWr_flag | id_ld_flag) ? free_reg : frat_my_map[id_RegWr];
 
         remap_FRAT <= id_RegWr_flag | id_ld_flag;
         new_mapping <= free_reg;
@@ -155,13 +156,29 @@ end
 
 always @(negedge CLK) begin
     `ifdef RENAME
-    $display("Rename");
-    $display("Instr: %x, InstrPC: %x", id_instr, id_instrpc);
-    $display("RS: %d, RT: %d, RD: %d, MS: %d, MT: %d, MD: %d", id_RegA, id_RegB, id_RegWr, frat_my_map[id_RegA], frat_my_map[id_RegB], (id_ld_flag) ? free_reg : frat_my_map[id_RegWr]);
-    $display("Reg Wrt?: %x, Load?: %x", id_RegWr_flag, id_ld_flag);
-    $display("Reg to Map: %d, New Mapping: %d, Remap?: %x", id_RegWr, free_reg, id_RegWr_flag | id_ld_flag);
-    $display("Busy clear: %x, Busy clear reg: %d", exe_busyclear_flag, exe_busyclear_reg);
-    $display("End Rename");
+        $display("\t\t\t\tRename");
+        $display("Instr: %x, InstrPC: %x", id_instr, id_instrpc);
+        $display("RS: %d, RT: %d, RD: %d, MS: %d, MT: %d, MD: %d", id_RegA, id_RegB, id_RegWr, frat_my_map[id_RegA], frat_my_map[id_RegB], (id_ld_flag | id_RegWr_flag) ? free_reg : frat_my_map[id_RegWr]);
+        $display("Reg Wrt?: %x, Load?: %x", id_RegWr_flag, id_ld_flag);
+        $display("Reg to Map: %d, New Mapping: %d, Remap?: %x", id_RegWr, free_reg, id_RegWr_flag | id_ld_flag);
+        $display("Busy clear: %x, Busy clear reg: %d", exe_busyclear_flag, exe_busyclear_reg);
+        $display("\t\t\t\tEnd Rename");
+    `endif
+
+    `ifdef BUSY
+        $display("\t\t\t\tBUSY bits");
+        for(i = 0; i < 64; i = i + 1) begin
+            if((id_RegWr_flag | id_ld_flag)) begin
+                $display("busy[%d]: %d   <<<--- 1", i, busy[i]);
+            end
+            else if(exe_busyclear_flag) begin
+                $display("busy[%d]: %d   <<<--- 0", i, busy[i]);
+            end
+            else begin
+                $display("busy[%d]: %d", i, busy[i]);
+            end
+        end
+        $display("\t\t\t\tEND BUSY");
     `endif
 end
 
