@@ -115,10 +115,11 @@ integer instr_num [15:0];
 
 wire [15:0] instr_ready;
 assign issue_halt = (empty_spot == 16) | (empty_in_issue == 0);
+reg [15:0] mult_ready;
 
 always @ (rob_instr_num or ready_q) begin
     for (i = 0; i < 16; i = i + 1) begin
-        instr_ready[i] = ready_q[0][i] & ready_q[1][i] & ready_q[2][i];
+        instr_ready[i] = ready_q[0][i] & ready_q[1][i] & ready_q[2][i] & mult_ready[i];
     end
 end
 
@@ -170,6 +171,9 @@ always @(posedge CLK or negedge RESET) begin
         end
     end else if (CLK & !STALL ) begin
         if (rename_enque && (empty_spot < 16)) begin
+            if(hilo != 2'b00) begin
+                mult_ready[empty_spot] <= (rob_instr_num == rename_instr_num);
+            end
             empty_in_issue[empty_spot]   <= 0;
             issue_q[empty_spot][137:0]   <= rename_issueinfo[137:0];
             ready_q[0][empty_spot] <= (MapA == 0) ? 1 : busy[MapA];//(jump_flag & jr_flag) ? 1 : (link_flag ? 0 :1);
@@ -248,6 +252,13 @@ always @(negedge CLK or negedge RESET) begin
     if (!RESET | FLUSH) begin
 
     end else if (!CLK & !STALL ) begin
+        for(i = 0; i < 16; i = i + 1) begin
+            if(empty_in_issue[i] != 1) begin
+                if(issue_q[i][83:82] != 2'b00) begin
+                    mult_ready[i] = (rob_instr_num == instr_num[i]) | mult_ready[i];
+                end
+            end
+        end
         //matching exe broadcast reg with current reg
         if (exe_broadcast || mem_broadcast) begin
             for (i = 0; i < 16; i = i+1)begin

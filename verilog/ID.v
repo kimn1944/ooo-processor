@@ -300,6 +300,7 @@ module ID(
     wire [4:0] oldB;
     wire [4:0] oldC;
     wire [63:0] busy;
+    integer instr_num;
     assign mappedS = rename_out[5:0];
     assign mappedT = rename_out[11:6];
     assign mappedD = rename_out[17:12];
@@ -354,7 +355,7 @@ module ID(
 
         .halt_rename_queue(halt_rename_queue),
 
-        .instr_num());
+        .instr_num(instr_num));
 //******************************************************************************
     Decoder #(
     .TAG("1")
@@ -385,15 +386,15 @@ module ID(
         .FLUSH(flush),
 
         // RENAME inputs
-        .rename_enque(0),
-        .rename_instr_num(0),
-        .rename_issueinfo(0),
+        .rename_enque(rename_entry_allocate),
+        .rename_instr_num(instr_num),
+        .rename_issueinfo(rename_entry),
         .busy(busy),
 
         // EXE inputs
-        .exe_broadcast(0),
-        .exe_broadcast_map(0),
-        .exe_broadcast_val(0),
+        .exe_broadcast(RegWrite1_IN),
+        .exe_broadcast_map(F_R[WriteRegister1_IN]),
+        .exe_broadcast_val(WriteData1_IN),
 
         // phys reg input
         .PhysReg(REGS),
