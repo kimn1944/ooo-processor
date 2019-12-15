@@ -160,7 +160,7 @@ always @(posedge CLK or negedge RESET) begin
             ready_q[1][empty_spot] <= (MapB == 0) ? 1 : busy[MapB];
             ready_q[2][empty_spot] <= (RegDest_flag || link_flag || (MapWr == 0)) ? 1 : busy[MapWr]; //This is for Memwrite
 
-            Operand_q[0][empty_spot] <= (MapA == 0) ? OpA1 : PhysReg[MapA];
+            Operand_q[0][empty_spot] <= PhysReg[MapA];
             Operand_q[1][empty_spot] <= (MapB == 0) ? OpB1 : PhysReg[MapB];
             Operand_q[2][empty_spot] <= (RegDest_flag || link_flag || (MapWr == 0)) ? 0 : PhysReg[MapWr];
 
@@ -193,6 +193,9 @@ always @(posedge CLK or negedge RESET) begin
             MemWriteData_exe<= Operand_q[2][instr_out_index];
             empty_in_issue[instr_out_index] <= 1;
             issue_q[instr_out_index]        <= 0;
+            ready_q[0][instr_out_index]     <= 0;
+            ready_q[1][instr_out_index]     <= 0;
+            ready_q[2][instr_out_index]     <= 0;
             Operand_q[0][instr_out_index]   <= 0;
             Operand_q[1][instr_out_index]   <= 0;
             Operand_q[2][instr_out_index]   <= 0;
@@ -239,8 +242,8 @@ always @(negedge CLK or negedge RESET) begin
                     ready_q[0][i] = (issue_q[i][5:0] == exe_broadcast_map) ? 1 : ready_q[0][i];
                     ready_q[1][i] = (issue_q[i][11:6] == exe_broadcast_map) ? 1 : ready_q[1][i];
                     ready_q[2][i] = (issue_q[i][17:12] == exe_broadcast_map) ? 1 : ready_q[2][i];
-                end 
-                
+                end
+
                 if ((empty_in_issue[i] != 1) && mem_broadcast) begin
                     Operand_q[0][i] = ((issue_q[i][5:0] == mem_broadcast_map) && (issue_q[i][5:0] != 0) && (ready_q[0] != 1)) ? mem_broadcast_val : Operand_q[0][i];
                     Operand_q[1][i] = ((issue_q[i][11:6] == mem_broadcast_map) && (issue_q[i][11:6] != 0) && (ready_q[1] != 1)) ? mem_broadcast_val : Operand_q[1][i];
