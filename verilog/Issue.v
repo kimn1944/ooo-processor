@@ -18,6 +18,9 @@ module Issue (
     input integer rename_instr_num,
     input [169:0] rename_issueinfo,
     input [63:0] busy,
+    input [4:0] rename_A,
+    input [4:0] rename_B,
+    input [4:0] rename_C,
 
     //from execution
     input exe_broadcast,
@@ -59,6 +62,10 @@ module Issue (
     output reg [31:0]   operandB1_exe,
     output reg [31:0]   MemWriteData_exe,
 
+    output reg [4:0]    A_exe,
+    output reg [4:0]    B_exe,
+    output reg [4:0]    C_exe,
+
     output integer      instr_num_exe,
 
 
@@ -78,6 +85,7 @@ reg [137:0] issue_q [15:0];
 reg [31:0] Operand_q [2:0][15:0];
 reg [15:0] ready_q [2:0];
 reg [15:0] empty_in_issue;
+reg [4:0] old_regs [2:0][15:0];
 
 wire [5:0] MapA     =  rename_issueinfo[5:0];
 wire [5:0] MapB     =  rename_issueinfo[11:6];
@@ -150,6 +158,9 @@ initial begin
         Operand_q[0][i] = 0;
         Operand_q[1][i] = 0;
         Operand_q[2][i] = 0;
+        old_regs[0][i] = 0;
+        old_regs[1][i] = 0;
+        old_regs[2][i] = 0;
     end
 end
 
@@ -168,6 +179,9 @@ always @(posedge CLK or negedge RESET) begin
             Operand_q[2][i] = 0;
             issue_q[i]      = 0;
             instr_num[i]    = 0;
+            old_regs[0][i] = 0;
+            old_regs[1][i] = 0;
+            old_regs[2][i] = 0;
         end
     end else if (CLK & !STALL ) begin
         if (rename_enque && (empty_spot < 16)) begin
@@ -183,6 +197,10 @@ always @(posedge CLK or negedge RESET) begin
             Operand_q[0][empty_spot] <= PhysReg[MapA];
             Operand_q[1][empty_spot] <= (MapB == 0) ? OpB1 : PhysReg[MapB];
             Operand_q[2][empty_spot] <= (RegDest_flag || link_flag || (MapWr == 0)) ? 0 : PhysReg[MapWr];
+
+            old_regs[0][empty_spot] = rename_A;
+            old_regs[1][empty_spot] = rename_B;
+            old_regs[2][empty_spot] = rename_C;
 
             instr_num[empty_spot]    <= rename_instr_num;
             //WriteRegister1 = RegDst1?rd1:(link1?5'd31:rt1);
@@ -208,9 +226,18 @@ always @(posedge CLK or negedge RESET) begin
             ALUSrc_flag     <= issue_q[instr_out_index][94];
             alt_PC_exe      <= issue_q[instr_out_index][132:101];
 
+            A_exe           <= old_regs[0][instr_out_index];
+            B_exe           <= old_regs[1][instr_out_index];
+            C_exe           <= old_regs[2][instr_out_index];
+
             operandA1_exe   <= Operand_q[0][instr_out_index];
             operandB1_exe   <= Operand_q[1][instr_out_index];
             MemWriteData_exe<= Operand_q[2][instr_out_index];
+
+            old_regs[0][instr_out_index]    <= 0;
+            old_regs[1][instr_out_index]    <= 0;
+            old_regs[2][instr_out_index]    <= 0;
+            
             empty_in_issue[instr_out_index] <= 1;
             issue_q[instr_out_index]        <= 0;
             ready_q[0][instr_out_index]     <= 0;

@@ -390,6 +390,9 @@ module ID(
         .rename_instr_num(instr_num),
         .rename_issueinfo(rename_entry),
         .busy(busy),
+        .rename_A(oldA),
+        .rename_B(oldB),
+        .rename_C(oldC),
 
         // EXE inputs
         .exe_broadcast(RegWrite1_IN),
@@ -408,29 +411,64 @@ module ID(
         .mem_broadcast_val(0),
 
         // outputs to EXE
-        .RegWr_exe(),
-        .instr_exe(),
-        .instr_pc_exe(),
-        .shamt_exe(),
-        .ALU_con_exe(),
-        .RegWr_flag_exe(),
-        .MemWr_exe(),
-        .MemRd_exe(),
-        .branch_exe(),
-        .jump_exe(),
-        .jumpReg_exe(),
-        .regDest_exe(),
-        .link_exe(),
-        .hilo_exe(),
-        .sys_exe(),
-        .ALUSrc_exe(),
-        .alt_PC_exe(),
-        .operandA1_exe(),
-        .operandB1_exe(),
-        .MemWriteData_exe(),
-        .instr_num_exe(),
+        .RegWr_exe(RegWr_exe),
+        .instr_exe(instr_exe),
+        .instr_pc_exe(instr_pc_exe),
+        .shamt_exe(shamt_exe),
+        .ALU_con_exe(ALU_con_exe),
+        .RegWr_flag_exe(RegWr_flag_exe),
+        .MemWr_exe(MemWr_exe),
+        .MemRd_exe(MemRd_exe),
+        .branch_exe(branch_exe),
+        .jump_exe(jump_exe),
+        .jumpReg_exe(jumpReg_exe),
+        .regDest_exe(regDest_exe),
+        .link_exe(link_exe),
+        .hilo_exe(hilo_exe),
+        .sys_exe(sys_exe),
+        .ALUSrc_exe(ALUSrc_exe),
+        .alt_PC_exe(alt_PC_exe),
+        .operandA1_exe(operandA1_exe),
+        .operandB1_exe(operandB1_exe),
+        .MemWriteData_exe(MemWriteData_exe),
 
-        .halt_rename());
+        .A_exe(A_exe),
+        .B_exe(B_exe),
+        .C_exe(C_exe),
+
+        .instr_num_exe(instr_num_exe),
+
+        .halt_rename(halt_rename));
+
+    wire [5:0]    RegWr_exe;
+    wire [31:0]   instr_exe;
+    wire [31:0]   instr_pc_exe;
+
+    wire [4:0]    shamt_exe;
+    wire [5:0]    ALU_con_exe;
+    wire          RegWr_flag_exe;
+    wire          MemWr_exe;
+    wire          MemRd_exe;
+    wire          branch_exe;
+    wire          jump_exe;
+    wire          jumpReg_exe;
+    wire          regDest_exe;
+    wire          link_exe;
+    wire [1:0]    hilo_exe;
+    wire          sys_exe;
+    wire          ALUSrc_exe;
+
+    wire [31:0]   alt_PC_exe;
+    wire [31:0]   operandA1_exe;
+    wire [31:0]   operandB1_exe;
+    wire [31:0]   MemWriteData_exe;
+
+    wire [4:0]    A_exe;
+    wire [4:0]    B_exe;
+    wire [4:0]    C_exe;
+
+    wire          halt_rename;
+    integer       instr_num_exe;
 
     reg [1:0] bubble;
 
