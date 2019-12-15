@@ -51,32 +51,32 @@ module MEM(
 
     output reg [31:0] data_write_2DM,
     output [31:0] data_address_2DM,
-	 output reg [1:0] data_write_size_2DM,
+	output reg [1:0] data_write_size_2DM,
     input [31:0] data_read_fDM,
-	 output MemRead_2DM,
-	 output MemWrite_2DM);
+	output MemRead_2DM,
+	output MemWrite_2DM);
 
-	 //Variables for Memory Module Inputs/Outputs:
-	 //ALU_result == Memory Address to access
-	 //MemRead (obvious)
-	 //MemWrite (obvious)
-	 //ALU_control (obvious)
-	 wire [31:0] MemoryData1;	//Used for LWL, LWR (existing content in register) and for writing (data to write)
-	 wire [31:0] MemoryData;
-	 //wire [31:0] MemoryReadData;	//Data read in from memory (and merged appropriate if LWL, LWR)
-	 reg [31:0]	 data_read_aligned;
+	//Variables for Memory Module Inputs/Outputs:
+	//ALU_result == Memory Address to access
+	//MemRead (obvious)
+	//MemWrite (obvious)
+	//ALU_control (obvious)
+	wire [31:0] MemoryData1;	//Used for LWL, LWR (existing content in register) and for writing (data to write)
+	wire [31:0] MemoryData;
+	//wire [31:0] MemoryReadData;	//Data read in from memory (and merged appropriate if LWL, LWR)
+	reg [31:0]	 data_read_aligned;
 
-	 //Word-aligned address for reads
-     wire [31:0] MemReadAddress;
-     //Not always word-aligned address for writes (SWR has issues with this)
-     reg [31:0] MemWriteAddress;
+	//Word-aligned address for reads
+	wire [31:0] MemReadAddress;
+	//Not always word-aligned address for writes (SWR has issues with this)
+	reg [31:0] MemWriteAddress;
 
-	 wire MemWrite;
-	 wire MemRead;
+	wire MemWrite;
+	wire MemRead;
 
-	 wire [31:0] ALU_result;
+	wire [31:0] ALU_result;
 
-	 wire [5:0] ALU_Control;
+	wire [5:0] ALU_Control;
 
     assign MemWrite = MemWrite1_IN;
     assign MemRead = MemRead1_IN;
@@ -84,18 +84,18 @@ module MEM(
     assign ALU_Control = ALU_Control1_IN;
     assign MemoryData = MemoryData1;
 
-	 assign MemReadAddress = {ALU_result[31:2],2'b00};
+	assign MemReadAddress = {ALU_result[31:2],2'b00};
 
-	 assign data_address_2DM = MemWrite?MemWriteAddress:MemReadAddress;	//Reads are always aligned; writes may be unaligned
+	assign data_address_2DM = MemWrite?MemWriteAddress:MemReadAddress;	//Reads are always aligned; writes may be unaligned
 
-	 assign MemRead_2DM = MemRead;
-    assign MemWrite_2DM = MemWrite;
+	assign MemRead_2DM = MemRead;
+	assign MemWrite_2DM = MemWrite;
 
 
-     reg [31:0]WriteData1;
+	reg [31:0]WriteData1;
 
-	 wire comment1;
-	 assign comment1 = 1;
+	wire comment1;
+	assign comment1 = 1;
 
 
 always @(data_read_fDM) begin
