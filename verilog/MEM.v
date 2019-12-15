@@ -259,21 +259,7 @@ always @(data_read_fDM) begin
 `endif
 end
 
-`ifdef HAS_FORWARDING
-RegValue1 MemoryDataValue(
-    .ReadRegister1(WriteRegister1_IN),
-    .RegisterData1(MemWriteData1_IN),
-    .WriteRegister1stPri1(WriteRegister1_OUT),
-    .WriteData1stPri1(WriteData1_OUT),
-    .Valid1stPri1(RegWrite1_OUT),
-    .Output1(MemoryData1),
-    .comment(1'b0)
-    );
-
-	 assign WriteData1_async = WriteData1;
-`else
 assign MemoryData1 = MemWriteData1_IN;
-`endif
 
 	 /* verilator lint_off UNUSED */
 	 reg [31:0] Instr1_OUT;
