@@ -178,7 +178,7 @@ always @(negedge CLK) begin
         $display("Reg Wrt?: %x, Load?: %x", id_RegWr_flag, id_ld_flag);
         $display("Reg to Map: %d, New Mapping: %d, Remap?: %x", id_RegWr, free_reg, id_RegWr_flag | id_ld_flag);
         $display("Busy clear: %x, Busy clear reg: %d", exe_busyclear_flag, exe_busyclear_reg);
-        $display("IQ alloc: %x", entry_allocate_issue);
+        $display("IQ alloc: %x", (!CLK & !(issue_halt | STALL | rob_halt | lsq_halt | free_halt | FLUSH)));
         $display("\t\t\t\tEnd Rename");
     `endif
 
@@ -191,7 +191,7 @@ always @(negedge CLK) begin
             else if((id_RegWr_flag | id_ld_flag) & ((i + 32) == free_reg)) begin
                 $display("busy[%d]: %d                   busy[%d]: %d   <<<--- 1", i, busy[i], i + 32, busy[i + 32]);
             end
-            else if(exe_busyclear_flag & (i == exe_busyclear_reg[4:0])) begin
+            else if(exe_busyclear_flag & (i == exe_busyclear_reg)) begin
                 $display("busy[%d]: %d   <<<--- 0        busy[%d]: %d", i, busy[i], i + 32, busy[i + 32]);
             end
             else if(exe_busyclear_flag & ((i + 32) == exe_busyclear_reg)) begin

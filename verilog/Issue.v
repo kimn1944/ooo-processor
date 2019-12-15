@@ -103,7 +103,7 @@ wire RegWr_flag     = rename_issueinfo[93];
 wire MemWr_flag     = rename_issueinfo[95];
 // wire MemRd_flag     = rename_issueinfo[96];
 // wire branch_flag    = rename_issueinfo[97];
-// wire jump_flag      = rename_issueinfo[98];
+wire jump_flag      = rename_issueinfo[98];
 
 wire RegDest_flag   = rename_issueinfo[99];
 wire link_flag      = rename_issueinfo[100];
@@ -131,13 +131,31 @@ always @ (rob_instr_num or ready_q) begin
     end
 end
 
+// wire [15:0] reverse_dir;
+// assign reverse_dir[0] = empty_in_issue[15];
+// assign reverse_dir[1] = empty_in_issue[14];
+// assign reverse_dir[2] = empty_in_issue[13];
+// assign reverse_dir[3] = empty_in_issue[12];
+// assign reverse_dir[4] = empty_in_issue[11];
+// assign reverse_dir[5] = empty_in_issue[10];
+// assign reverse_dir[6] = empty_in_issue[9];
+// assign reverse_dir[7] = empty_in_issue[8];
+// assign reverse_dir[8] = empty_in_issue[7];
+// assign reverse_dir[9] = empty_in_issue[6];
+// assign reverse_dir[10] = empty_in_issue[5];
+// assign reverse_dir[11] = empty_in_issue[4];
+// assign reverse_dir[12] = empty_in_issue[3];
+// assign reverse_dir[13] = empty_in_issue[2];
+// assign reverse_dir[14] = empty_in_issue[1];
+// assign reverse_dir[15] = empty_in_issue[0];
+
 Arbiter_main instr_Arbiter(
     .ready(instr_ready),
     .grant(),
     .granted(instr_out_index)
 );
 
-Arbiter_main issue_Arbiter(
+Arbiter_main #(.DIRECTION(1)) issue_Arbiter(
     .ready(empty_in_issue),
     .grant(),
     .granted(empty_spot)
@@ -187,7 +205,7 @@ always @(posedge CLK or negedge RESET) begin
             empty_in_issue[empty_spot]   <= 0;
             issue_q[empty_spot][137:0]   <= rename_issueinfo[137:0];
             ready_q[0][empty_spot] <= (MapA == 0) ? 1 : ~busy[MapA];//(jum p_flag & jr _flag) ? 1 : (link_flag ? 0 :1);
-            ready_q[1][empty_spot] <= (MapB == 0) ? 1 : ~busy[MapB];
+            ready_q[1][empty_spot] <= (MapB == 0) ? (jump_flag ? 0 : 1) : ~busy[MapB];
             ready_q[2][empty_spot] <= ((RegDest_flag | link_flag | (MapWr == 0) | RegWr_flag) & !MemWr_flag) ? 1 : ~busy[MapWr]; //This is for Memwrite
 
             Operand_q[0][empty_spot] <= PhysReg[MapA];

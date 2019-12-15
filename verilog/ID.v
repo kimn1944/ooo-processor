@@ -491,8 +491,7 @@ module ID(
             all_info_IF <= 0;
             $display("ID:RESET");
         end else begin
-        bubble <= bubble + 2'b1;
-        if(bubble == 0) begin
+            bubble <= bubble + 2'b1;
             Instr1_OUT <= instr_exe;
             OperandA1_OUT <= operandA1_exe;
             OperandB1_OUT <= operandB1_exe;
@@ -509,23 +508,6 @@ module ID(
             SYS <= sys_exe;
             all_info_IF <= {alt_PC_exe, jump_exe, jumpReg_exe};
         end
-        else begin
-            Instr1_OUT <= 0;
-            OperandA1_OUT <= 0;
-            OperandB1_OUT <= 0;
-            ReadRegisterA1_OUT <= 0;
-            ReadRegisterB1_OUT <= 0;
-            WriteRegister1_OUT <= 0;
-            MemWriteData1_OUT <= 0;
-            RegWrite1_OUT <= 0;
-            ALU_Control1_OUT <= 0;
-            MemRead1_OUT <= 0;
-            MemWrite1_OUT <= 0;
-            ShiftAmount1_OUT <= 0;
-            Instr1_PC_OUT <= 0;
-            SYS <= 0;
-            all_info_IF <= 0;
-        end
         if(1) begin
             $display("ID1:Instr=%x,Instr_PC=%x;SYS=%d()", Instr1_IN, Instr_PC_IN, rename_entry_issue[90]);
             $display("ID Flush: %x", flush);
@@ -533,5 +515,4 @@ module ID(
             //$display("ID1:ALU_Control=%x; MemRead=%d; MemWrite=%d (%x); ShiftAmount=%d",ALU_control1, MemRead1, MemWrite1, MemWriteData1, shiftAmount1);
 			  end
     end
-end
 endmodule

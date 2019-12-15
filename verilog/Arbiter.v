@@ -1,4 +1,6 @@
-module Arbiter (
+module Arbiter
+    #(parameter DIRECTION = 0)
+    (
     //child side
     input R0,
     input R1,
@@ -23,10 +25,19 @@ initial begin
     GR = 0;
 end
 
-assign GR = R0 | R1 | R2 | R3;
-assign G0 = GG & R0;
-assign G1 = GG & !R0 & R1;
-assign G2 = GG & !R0 & !R1 & R2;
-assign G3 = GG & !R0 & !R1 & !R2 & R3;
+if(DIRECTION) begin
+    assign GR = R0 | R1 | R2 | R3;
+    assign G0 = GG & ~R3 & ~R2 & ~R1 & R0;
+    assign G1 = GG & ~R3 & ~R2 & R1;
+    assign G2 = GG & ~R3 & R2;
+    assign G3 = GG & R3;
+end
+else begin
+    assign GR = R0 | R1 | R2 | R3;
+    assign G0 = GG & R0;
+    assign G1 = GG & !R0 & R1;
+    assign G2 = GG & !R0 & !R1 & R2;
+    assign G3 = GG & !R0 & !R1 & !R2 & R3;
+end
 
 endmodule

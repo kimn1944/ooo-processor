@@ -1,8 +1,7 @@
-module Arbiter_main (
-    input [15:0] ready,
+module Arbiter_main #(parameter DIRECTION = 0)
+    (input [15:0] ready,
     output reg [15:0] grant,
-    output integer granted
-);
+    output integer granted);
 
 wire GG0;
 wire GG1;
@@ -37,7 +36,7 @@ always @(*) begin
 end
 //assign granted = grant[0] ? 0 :(grant[1] ? 1 : (grant[2] ? 2 : (grant[3] ? 3: (grant[4] ? 4 : (grant[5]? 5: (grant[6] ? 6 : (grant[7] ? 7 : (grant[8] ? 8 : (grant[9] ? 9: (grant[10] ? 10 : (grant[11] ? 11: (grant[12] ? 12: (grant[13] ? 13 : (grant[14] ? 14 : (grant[15] ? 15: 16))))))))))))));
 
-Arbiter Arbiter0(
+Arbiter #(.DIRECTION(DIRECTION)) Arbiter0(
     //child side
     .R0(ready[0]),
     .R1(ready[1]),
@@ -54,7 +53,7 @@ Arbiter Arbiter0(
     .GR(GR0) //group request
 );
 
-Arbiter Arbiter1(
+Arbiter #(.DIRECTION(DIRECTION)) Arbiter1(
     //child side
     .R0(ready[4]),
     .R1(ready[5]),
@@ -71,7 +70,7 @@ Arbiter Arbiter1(
     .GR(GR1) //group request
 );
 
-Arbiter Arbiter2(
+Arbiter #(.DIRECTION(DIRECTION)) Arbiter2(
     //child side
     .R0(ready[8]),
     .R1(ready[9]),
@@ -88,7 +87,7 @@ Arbiter Arbiter2(
     .GR(GR2) //group request
 );
 
-Arbiter Arbiter3(
+Arbiter #(.DIRECTION(DIRECTION)) Arbiter3(
     //child side
     .R0(ready[12]),
     .R1(ready[13]),
@@ -106,7 +105,7 @@ Arbiter Arbiter3(
 );
 
 
-Arbiter parent0(
+Arbiter #(.DIRECTION(DIRECTION)) parent0(
     //child side
     .R0(GR0),
     .R1(GR1),
