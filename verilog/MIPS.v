@@ -181,7 +181,7 @@ module MIPS (
     .flush(flush),
     .all_info_MEM(EXE_all_info_MEM),
     //******************************************************************************
-		.CLK(CLK),
+    .CLK(CLK),
 		.RESET(RESET),
 		.Instr1_IN(Instr1_IDEXE),
 		.Instr1_PC_IN(Instr1_PC_IDEXE),

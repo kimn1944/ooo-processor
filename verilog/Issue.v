@@ -237,7 +237,7 @@ always @(posedge CLK or negedge RESET) begin
             old_regs[0][instr_out_index]    <= 0;
             old_regs[1][instr_out_index]    <= 0;
             old_regs[2][instr_out_index]    <= 0;
-            
+
             empty_in_issue[instr_out_index] <= 1;
             issue_q[instr_out_index]        <= 0;
             ready_q[0][instr_out_index]     <= 0;

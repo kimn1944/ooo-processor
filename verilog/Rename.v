@@ -102,7 +102,7 @@ always @(negedge CLK or negedge RESET) begin
         entry_ld_lsq <= 0;
         entry_st_lsq <= 0;
         busy <= 0;
-        instr_num <= 0;
+        instr_num <= 1;
         remap_FRAT <= 0;
         oldA <= 0;
         oldB <= 0;
