@@ -14,14 +14,14 @@
 		#ifdef REMAP
 				static VMIPS_PHYS_REG* _RegFile = NULL;
 				static VMIPS_EXE* _EXE = NULL;
-				static VMIPS_TABLE_obj* _FRAT = NULL;
+				static VMIPS_TABLE_obj* _RRAT = NULL;
 				void init_register_access(VMIPS_ID *id, VMIPS_EXE *exe) {
 						_RegFile = id->PHYS_REG;
 						_EXE = exe;
-						_FRAT = id->FRAT;
+						_RRAT = id->RRAT;
 				}
 				#define REG_FILE_VALID	(_RegFile && _EXE)
-				#define REG_ACCESS(regno) _RegFile->arr[_FRAT->arr[regno]]
+				#define REG_ACCESS(regno) _RegFile->arr[_RRAT->arr[regno]]
 		#else
 				static VMIPS_RegFile* _RegFile = NULL;
 				static VMIPS_EXE* _EXE = NULL;
@@ -82,7 +82,7 @@ void write_register(uint32_t regno, uint32_t value) {
 uint32_t register_arch_to_phys(uint32_t regno) {
 #ifndef OOO
 	#ifdef REMAP
-			return _FRAT->arr[regno];
+			return _RRAT->arr[regno];
 	#else
 			return regno;
 	#endif

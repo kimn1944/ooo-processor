@@ -134,6 +134,19 @@ module MIPS (
     .halt(halt),
     .all_info_IF(IF_all_info_EXE),
     .flush(flush),
+
+    // from exe
+    .broadcast_flag(exe_broadcast_flag),
+    .broadcast_map(exe_broadcast_map),
+    .broadcast_val(exe_broadcast_val),
+    .broadcast_reg(exe_broadcast_reg),
+
+    // to exe
+    .issue_RegWr_map(issue_RegWr_map),
+    .issue_RegWr_flag(issue_RegWr_flag),
+
+    // from MEM
+    .mem_broadcast_map(mem_broadcast_map),
 //******************************************************************************
 		.WriteRegister1_IN(WriteRegister1_MEMWB),
 		.WriteData1_IN(WriteData1_MEMWB),
@@ -173,6 +186,16 @@ module MIPS (
     wire flush;
     wire [169:0] EXE_all_info_MEM;
 
+    //******************************************************************************
+    wire [5:0] issue_RegWr_map;
+    wire issue_RegWr_flag;
+    wire exe_broadcast_flag;
+    wire [5:0] exe_broadcast_map;
+    wire [31:0] exe_broadcast_val;
+    wire [4:0] exe_broadcast_reg;
+
+    wire [5:0] exe_RegWr_map;
+    //******************************************************************************
 	EXE EXE(
     //******************************************************************************
     .IF_all_info(IF_all_info_EXE),
@@ -180,6 +203,17 @@ module MIPS (
     .alt_addr(alt_addr),
     .flush(flush),
     .all_info_MEM(EXE_all_info_MEM),
+
+    // broadcast stuff
+    .issue_RegWr_map(issue_RegWr_map),
+    .issue_RegWr_flag(issue_RegWr_flag),
+    .broadcast_flag(exe_broadcast_flag),
+    .broadcast_map(exe_broadcast_map),
+    .broadcast_reg(exe_broadcast_reg),
+    .broadcast_val(exe_broadcast_val),
+
+    // to mem stuff for broadcast
+    .exe_RegWr_map(exe_RegWr_map),
     //******************************************************************************
     .CLK(CLK),
 		.RESET(RESET),
@@ -233,9 +267,13 @@ module MIPS (
     assign unused_d1 = block_read_fDM_valid;
     assign unused_d2 = block_write_fDM_valid;
 
+    wire [5:0] mem_broadcast_map;
+
     MEM MEM(
 //******************************************************************************
         .EXE_all_info(EXE_all_info_MEM),
+        .exe_RegWr_map(exe_RegWr_map),
+        .broadcast_map(mem_broadcast_map),
 //******************************************************************************
         .CLK(CLK),
         .RESET(RESET),

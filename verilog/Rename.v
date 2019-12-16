@@ -82,7 +82,7 @@ assign halt_rename_queue = issue_halt | STALL | rob_halt | lsq_halt | free_halt;
 QUEUE_obj #(.INIT(1), .LENGTH(32), .WIDTH(6)) freelist (
       .clk(CLK),
       .reset(RESET),
-      .stall(STALL),
+      .stall(0),
       .flush(FLUSH),
 
       .enque(rrat_free),

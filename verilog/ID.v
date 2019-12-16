@@ -26,10 +26,23 @@ module ID(
     input [31:0] instr1_in,
     input [31:0] instr_pc_in,
     input [31:0] instr_pc_plus4_in,
+    input flush,
+
+    // from exe
+    input broadcast_flag,
+    input [5:0] broadcast_map,
+    input [4:0] broadcast_reg,
+    input [31:0] broadcast_val,
+
+    // from mem
+    input [5:0] mem_broadcast_map,
 
     output halt,
     output reg [169:0] all_info_IF,
-    input flush,
+
+    // to exe
+    output reg [5:0] issue_RegWr_map,
+    output reg issue_RegWr_flag,
 //******************************************************************************
 
     //Writeback stage [register to write]
@@ -239,7 +252,7 @@ module ID(
     wire [31:0] REGS [63:0];
     wire [5:0] returned_mapping;
     wire return_map;
-    TABLE_obj #() FRAT
+    TABLE_obj #(.tag("FRAT")) FRAT
         (.clk(CLK),
         .reset(RESET),
         .stall(0),
@@ -252,13 +265,27 @@ module ID(
         .return_map(),
         .my_map(F_R));
 
-    TABLE_obj #(.tag("RRAT")) RRAT
+    wire [4:0] temp_to_remap;
+    wire [5:0] temp_map;
+    wire temp_do; 
+
+    assign temp_to_remap = broadcast_flag ? broadcast_reg : WriteRegister1_IN;
+    assign temp_map = broadcast_flag ? broadcast_map : mem_broadcast_map;
+    assign temp_do = broadcast_flag | RegWrite1_IN;
+
+    TABLE_obj #() RRAT
         (.clk(CLK),
         .reset(RESET),
         .stall(0),
-        .reg_to_map(reg_to_map_FRAT),
-        .new_mapping(new_mapping),
-        .remap(remap_FRAT),
+        // .reg_to_map(broadcast_reg),
+        // .new_mapping(broadcast_map),
+        // .remap(broadcast_flag),
+        // .reg_to_map(reg_to_map_FRAT),
+        // .new_mapping(new_mapping),
+        // .remap(remap_FRAT),
+        .reg_to_map(temp_to_remap),
+        .new_mapping(temp_map),
+        .remap(temp_do),
         .new_map(F_R),
         .overwrite(0),
         .returned_mapping(returned_mapping),
@@ -270,13 +297,13 @@ module ID(
         .reset(RESET),
         .stall(0),
         // write exe
-        .reg_to_update1(F_R[WriteRegister1_IN]),
-        .new_value1(WriteData1_IN),
-        .update1(RegWrite1_IN),
+        .reg_to_update1(broadcast_map),
+        .new_value1(broadcast_val),
+        .update1(broadcast_flag),
         // write mem
-        .reg_to_update2(0),
-        .new_value2(0),
-        .update2(0),
+        .reg_to_update2(mem_broadcast_map),
+        .new_value2(WriteData1_IN),
+        .update2(RegWrite1_IN),
         .regs(REGS));
 
     assign rsRawVal1 = REGS[mappedS];
@@ -490,6 +517,8 @@ module ID(
             SYS <= 0;
             bubble <= 0;
             all_info_IF <= 0;
+            issue_RegWr_map <= 0;
+            issue_RegWr_flag <= 0;
             $display("ID:RESET");
         end else begin
         bubble <= bubble + 2'b1;
@@ -509,6 +538,8 @@ module ID(
             Instr1_PC_OUT <= Instr_PC_IN;
             SYS <= rename_out[90];
             all_info_IF <= rename_out[169:0];
+            issue_RegWr_map <= mappedD;
+            issue_RegWr_flag <= (WriteRegister1 != 5'd0) ? rename_out[93] : 1'd0;
         end
         else begin
             Instr1_OUT <= 0;
@@ -526,10 +557,12 @@ module ID(
             Instr1_PC_OUT <= 0;
             SYS <= 0;
             all_info_IF <= 0;
+            issue_RegWr_map <= 0;
+            issue_RegWr_flag <= 0;
         end
         if(1) begin
             $display("ID1:Instr=%x,Instr_PC=%x;SYS=%d()", Instr1_IN, Instr_PC_IN, rename_out[90]);
-            $display("ID Flush: %x", flush);
+            $display("ID Flush: %x, Broadcast flag: %x, Broadcast Reg: %d, Broadcast Map: %d, Broadcast Val: %x", flush, broadcast_flag, broadcast_reg, broadcast_map, broadcast_val);
             //$display("ID1:A:Reg[%d]=%x; B:Reg[%d]=%x; Write?%d to %d",RegA1, OpA1, RegB1, OpB1, (WriteRegister1!=5'd0)?RegWrite1:1'd0, WriteRegister1);
             //$display("ID1:ALU_Control=%x; MemRead=%d; MemWrite=%d (%x); ShiftAmount=%d",ALU_control1, MemRead1, MemWrite1, MemWriteData1, shiftAmount1);
 			  end
