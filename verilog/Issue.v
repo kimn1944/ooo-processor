@@ -102,7 +102,7 @@ wire [1:0] hilo     = rename_issueinfo[83:82];
 wire RegWr_flag     = rename_issueinfo[93];
 // wire ALUSrc_flag    = rename_issueinfo[94];
 wire MemWr_flag     = rename_issueinfo[95];
-// wire MemRd_flag     = rename_issueinfo[96];
+wire MemRd_flag     = rename_issueinfo[96];
 // wire branch_flag    = rename_issueinfo[97];
 wire jump_flag      = rename_issueinfo[98];
 
@@ -207,11 +207,11 @@ always @(posedge CLK or negedge RESET) begin
             issue_q[empty_spot][137:0]   <= rename_issueinfo[137:0];
             ready_q[0][empty_spot] <= (MapA == 0) ? 1 : ~busy[MapA];//(jum p_flag & jr _flag) ? 1 : (link_flag ? 0 :1);
             ready_q[1][empty_spot] <= (MapB == 0) ? (jump_flag ? 0 : 1) : ~busy[MapB];
-            ready_q[2][empty_spot] <= ((RegDest_flag | link_flag | (MapWr == 0) | RegWr_flag) & !MemWr_flag) ? 1 : ~busy[MapWr]; //This is for Memwrite
+            ready_q[2][empty_spot] <= ((RegDest_flag | link_flag | (MapWr == 0) | RegWr_flag) & !MemWr_flag & !MemRd_flag) ? 1 : ~busy[MapWr]; //This is for Memwrite
 
             Operand_q[0][empty_spot] <= PhysReg[MapA];
             Operand_q[1][empty_spot] <= (MapB == 0) ? OpB1 : PhysReg[MapB];
-            Operand_q[2][empty_spot] <= ((RegDest_flag | link_flag | (MapWr == 0) | RegWr_flag) & !MemWr_flag) ? 0 : PhysReg[MapWr];
+            Operand_q[2][empty_spot] <= ((RegDest_flag | link_flag | (MapWr == 0) | RegWr_flag) & !MemWr_flag & !MemRd_flag) ? 0 : PhysReg[MapWr];
 
             old_regs[0][empty_spot] = rename_A;
             old_regs[1][empty_spot] = rename_B;

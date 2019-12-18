@@ -40,7 +40,7 @@ module EXE(
     // input issue_sys_flag,
     // input issue_ALUSrc_flag,
     // input [31:0] issue_alt_PC,
-    // input integer issue_instr_num,
+    input integer issue_instr_num,
 
     // //broadcast (to issue queue, phys reg, and lsq)
     output reg broadcast_flag,
@@ -51,8 +51,8 @@ module EXE(
     output reg [5:0] exe_RegWr_map,
 
     // //to Mem stage and rob
-    // output integer exe_instr_num,
-    // output reg complete_flag_rob,
+    output integer exe_instr_num,
+    output reg complete_flag_rob,
     // output reg RegWr_flag_lsq,
 //***************************//***************************//********************
     input CLK,
@@ -178,6 +178,7 @@ always @(posedge CLK or negedge RESET) begin
         broadcast_map <= 0;
         broadcast_val <= 0;
         flush <= 0;
+        exe_instr_num <= 0;
         $display("EXE:RESET");
   	end else if(CLK) begin
         HI <= new_HI;
@@ -209,8 +210,8 @@ always @(posedge CLK or negedge RESET) begin
         broadcast_reg       <= WriteRegister1_IN;
         broadcast_val       <= ALU_result1;
         exe_RegWr_map       <= issue_RegWr_map;
-        // exe_instr_num       <= issue_instr_num;
-        // complete_flag_rob   <= !MemRead1_IN && !MemWrite1_IN;
+        exe_instr_num       <= issue_instr_num;
+        complete_flag_rob   <= !MemRead1_IN && !MemWrite1_IN;
         //********************************************************************************************************
 
 		if(comment1) begin

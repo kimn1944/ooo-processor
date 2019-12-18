@@ -170,5 +170,13 @@ always @(negedge clk) begin
     end
 end
 
+always @(posedge clk) begin
+    `ifdef ROB
+        $display("\t\t\t\tROB");
+        $display("");
+        $display("\t\t\t\tEND ROB")
+    `endif
+end
+
 
 endmodule

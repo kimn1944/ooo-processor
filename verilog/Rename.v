@@ -61,9 +61,6 @@ module Rename (
     output reg [4:0] oldA,
     output reg [4:0] oldB,
     output reg [4:0] oldC,
-    // output reg busyA,
-    // output reg busyB,
-    // output reg busyC,
 
     // stalling the rename queue
     output halt_rename_queue,

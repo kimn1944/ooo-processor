@@ -121,9 +121,14 @@ module MIPS (
     wire [4:0]  ShiftAmount1_IDEXE;
 
     wire [34:0] IF_all_info_EXE;
+    integer instr_num_exe;
 
     wire halt;
 
+    wire [169:0] all_info_ROB;
+    wire allocate_ROB;
+    integer instr_num_ROB;
+    wire [4:0] reg_wrt_ROB;
 
 	ID ID(
 		.CLK(CLK),
@@ -144,6 +149,13 @@ module MIPS (
     // to exe
     .issue_RegWr_map(issue_RegWr_map),
     .issue_RegWr_flag(issue_RegWr_flag),
+    .instr_num_exe(instr_num_exe),
+
+    // to rob
+    .all_info_ROB(all_info_ROB),
+    .allocate_ROB(allocate_ROB),
+    .instr_num_ROB(instr_num_ROB),
+    .reg_wrt_ROB(reg_wrt_ROB),
 
     // from MEM
     .mem_broadcast_map(mem_broadcast_map),
@@ -201,15 +213,15 @@ module MIPS (
         .reset(RESET),
         .stall(0),
 
-        .rename_enque(0),
-        .rename_instr_num(0),
-        .rename_RegWr(0),
-        .rename_enque_data(0),
+        .rename_enque(allocate_ROB),
+        .rename_instr_num(instr_num_ROB),
+        .rename_RegWr(reg_wrt_ROB),
+        .rename_enque_data(all_info_ROB),
 
         .exe_complete_flag(0),
-        .exe_broadcast_flag(0),
-        .exe_Request_alt_pc(0),
-        .exe_Alt_PC(0),
+        .exe_broadcast_flag(exe_broadcast_flag),
+        .exe_Request_alt_pc(request_alt_pc),
+        .exe_Alt_PC(alt_addr),
         .exe_instr_num(0),
 
         .mem_complete_flag(0),
@@ -243,7 +255,8 @@ module MIPS (
     .Request_Alt_PC(request_alt_pc),
     .alt_addr(alt_addr),
     .flush(flush),
-    .all_info_MEM(EXE_all_info_MEM),
+
+    .issue_instr_num(instr_num_exe),
 
     // broadcast stuff
     .issue_RegWr_map(issue_RegWr_map),
@@ -254,7 +267,9 @@ module MIPS (
     .broadcast_val(exe_broadcast_val),
 
     // to mem stuff for broadcast
+    .exe_instr_num(exe_instr_num),
     .exe_RegWr_map(exe_RegWr_map),
+    .all_info_MEM(EXE_all_info_MEM),
     //******************************************************************************
     .CLK(CLK),
 		.RESET(RESET),
@@ -310,11 +325,16 @@ module MIPS (
 
     wire [5:0] mem_broadcast_map;
 
+
+    integer exe_instr_num;
     MEM MEM(
 //******************************************************************************
         .EXE_all_info(EXE_all_info_MEM),
         .exe_RegWr_map(exe_RegWr_map),
+        .exe_instr_num(exe_instr_num),
+
         .broadcast_map(mem_broadcast_map),
+        .mem_instr_num(mem_instr_num),
 //******************************************************************************
         .CLK(CLK),
         .RESET(RESET),

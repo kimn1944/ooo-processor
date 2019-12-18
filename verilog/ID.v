@@ -42,6 +42,13 @@ module ID(
     // to exe
     output reg [5:0] issue_RegWr_map,
     output reg issue_RegWr_flag,
+    output integer instr_num_exe,
+
+    // to ROB
+    output reg [169:0] all_info_ROB,
+    output reg allocate_ROB,
+    output integer instr_num_ROB,
+    output reg [4:0] reg_wrt_ROB,
 //******************************************************************************
 
     //Writeback stage [register to write]
@@ -331,7 +338,8 @@ module ID(
     // assign mappedD = rename_entry_issue[17:12];
     assign Instr1_IN         = rename_entry_issue[81:50];
     assign Instr_PC_IN       = rename_entry_issue[49:18];
-
+    assign instr_num_ROB = instr_num;
+    assign reg_wrt_ROB = oldC;
     Rename #() Rename
         (.CLK(CLK),
         .RESET(RESET),
@@ -370,8 +378,8 @@ module ID(
         .entry_st_lsq(),
         .entry_lsq(),
 
-        .entry_allocate_ROB(),
-        .entry_ROB(), // need
+        .entry_allocate_ROB(all_info_ROB),
+        .entry_ROB(allocate_ROB), // need
 
         .oldA(oldA),
         .oldB(oldB),
@@ -522,6 +530,7 @@ module ID(
             all_info_IF <= 0;
             issue_RegWr_map <= 0;
             issue_RegWr_flag <= 0;
+            instr_num_exe <= 0;
             $display("ID:RESET");
         end else begin
             bubble <= bubble + 2'b1;
@@ -542,6 +551,7 @@ module ID(
             all_info_IF <= {alt_PC_exe, jumpReg_exe, jump_exe, link_exe};
             issue_RegWr_map <= C_map_exe;
             issue_RegWr_flag <= (C_exe != 5'd0) ? RegWr_flag_exe : 1'd0;
+            instr_num_exe <= instr_num_exe;
         end
         if(1) begin
             $display("ID1:Instr=%x,Instr_PC=%x;SYS=%d()", Instr1_IN, Instr_PC_IN, rename_entry_issue[90]);

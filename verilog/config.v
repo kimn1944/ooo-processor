@@ -29,3 +29,4 @@
 `define RENAME
 `define BUSY
 `define ISSUE
+`define ROB
