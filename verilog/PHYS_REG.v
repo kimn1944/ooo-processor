@@ -28,7 +28,7 @@ module PHYS_REG
 
       assign regs = arr;
 
-      always @(posedge clk or negedge reset) begin
+      always @(negedge clk or negedge reset) begin
           if(!reset) begin
               for(i = 0; i < 64; i = i + 1) begin
                   arr[i] = 0;

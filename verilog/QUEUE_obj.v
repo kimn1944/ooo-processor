@@ -104,9 +104,9 @@ module QUEUE_obj
             head       <= (deque & ~stall & (size > 0)) ? ((head < LENGTH - 1) ? head + 1 : 0) : head;
 
             if(INIT) begin
-                queue[tail] <= (enque & (size < LENGTH)) ? enque_data : queue[tail];
-                tail        <= (enque & (size < LENGTH)) ? ((tail < LENGTH - 1) ? tail + 1 : 0) : tail;
-                size <= (enque & (size < LENGTH)) ? ((deque & ~stall & (size > 0)) ? size : size + 1) : ((deque & ~stall & (size > 0)) ? size - 1 : size);
+                queue[(tail + 1) % 64]  <= (enque & (size < LENGTH)) ? enque_data : queue[(tail + 1) % 64];
+                tail                    <= (enque & (size < LENGTH)) ? ((tail < LENGTH - 1) ? tail + 1 : 0) : tail;
+                size                    <= (enque & (size < LENGTH)) ? ((deque & ~stall & (size > 0)) ? size : size + 1) : ((deque & ~stall & (size > 0)) ? size - 1 : size);
             end
             else begin
                 queue[tail] <= (enque & ~halt & (size < LENGTH)) ? enque_data : queue[tail];
@@ -118,8 +118,8 @@ module QUEUE_obj
         `ifdef QUEUE
             if(INIT) begin
                 $display("\t\t\t\tFree List");
-                $display("Queue: %x, Size: %d, Head: %d, Tail: %d", queue[0], size, (deque & ~stall & (size > 0)) ? ((head < LENGTH - 1) ? head + 1 : 0) : head, (enque & ~halt & (size < LENGTH)) ? ((tail < LENGTH - 1) ? tail + 1 : 0) : tail);
-                $display("Enq Data[%x]: %x, Deq Data[%x]: %x", enque, enque_data, deque, (deque & ~stall & (size > 0)) ? queue[head] : 0);
+                $display("Queue: %d, Size: %d, Head: %d, Tail: %d", queue[0], size, (deque & ~stall & (size > 0)) ? ((head < LENGTH - 1) ? head + 1 : 0) : head, (enque & ~halt & (size < LENGTH)) ? ((tail < LENGTH - 1) ? tail + 1 : 0) : tail);
+                $display("Enq Data[%d]: %d, Deq Data[%d]: %d", enque, enque_data, deque, (deque & ~stall & (size > 0)) ? queue[head] : 0);
                 $display("Stall: %x, Halt: %x, Flush: %x, Reset: %x", stall, halt, flush, ~reset);
                 for(i = 0; i < LENGTH; i = i + 1) begin
                     if(i == head) begin

@@ -41,16 +41,14 @@ module TABLE_obj
                 arr <= new_map;
             end
             else begin
-                if(reg_to_map != 0) begin
-                    arr[reg_to_map] <= remap ? new_mapping : arr[reg_to_map];
-                    returned_mapping <= remap ? arr[reg_to_map] : 0;
-                    return_map <= remap ? 1 : 0;
-                end
-
+                arr[reg_to_map] <= (remap & (reg_to_map != 0)) ? new_mapping : arr[reg_to_map];
+                returned_mapping <= (remap & (reg_to_map != 0)) ? arr[reg_to_map] : 0;
+                return_map <= (remap & (reg_to_map != 0)) ? 1 : 0;
             end
         end
         `ifdef TABLE
             $display("\t\t\t\t%s", tag);
+            $display("Remap: %x", remap);
             for(i = 0; i < 32; i = i + 1) begin
                 if((i == reg_to_map) & remap) begin
                     $display("%s[%d]: %d   <<<--- %d", tag, i, arr[i], new_mapping);
