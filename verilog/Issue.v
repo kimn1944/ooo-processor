@@ -21,6 +21,7 @@ module Issue (
     input [4:0] rename_A,
     input [4:0] rename_B,
     input [4:0] rename_C,
+    input [5:0] load_special_mapping,
 
     //from execution
     input exe_broadcast,
@@ -84,9 +85,11 @@ module Issue (
 
 reg [137:0] issue_q [15:0];
 reg [31:0] Operand_q [2:0][15:0];
-reg [15:0] ready_q [2:0];
+reg [15:0] ready_q [3:0];
 reg [15:0] empty_in_issue;
 reg [4:0] old_regs [2:0][15:0];
+reg [5:0] load_special_mappings [15:0];
+reg [31:0] load_special_vals [15:0];
 
 wire [5:0] MapA     =  rename_issueinfo[5:0];
 wire [5:0] MapB     =  rename_issueinfo[11:6];
@@ -95,7 +98,7 @@ wire [5:0] MapWr    =  rename_issueinfo[17:12];
 // wire [31:0] Instr_pc = rename_issueinfo[49:18];
 // wire [31:0] Instr   = rename_issueinfo[81:50];
 wire [1:0] hilo     = rename_issueinfo[83:82];
-// wire [5:0] alu_con  = rename_issueinfo[89:84];
+wire [5:0] alu_con  = rename_issueinfo[89:84];
 
 // wire sys_flag       = rename_issueinfo[90];
 // wire jr_flag        = rename_issueinfo[92];
@@ -128,7 +131,7 @@ reg [15:0] mult_ready;
 
 always @ (rob_instr_num or ready_q) begin
     for (i = 0; i < 16; i = i + 1) begin
-        instr_ready[i] = ready_q[0][i] & ready_q[1][i] & ready_q[2][i] & mult_ready[i];
+        instr_ready[i] = ready_q[0][i] & ready_q[1][i] & ready_q[2][i] & ready_q[3][i] & mult_ready[i];
     end
 end
 
@@ -168,6 +171,7 @@ initial begin
     ready_q[0] = 0;
     ready_q[1] = 0;
     ready_q[2] = 0;
+    ready_q[3] = 0;
     for (i = 0; i < 16; i = i+1)begin
         Operand_q[0][i] = 0;
         Operand_q[1][i] = 0;
@@ -175,6 +179,8 @@ initial begin
         old_regs[0][i] = 0;
         old_regs[1][i] = 0;
         old_regs[2][i] = 0;
+        load_special_mappings[i] = 0;
+        load_special_vals[i]     = 0;
     end
 end
 
@@ -187,6 +193,7 @@ always @(posedge CLK or negedge RESET) begin
         ready_q[0] = 0;
         ready_q[1] = 0;
         ready_q[2] = 0;
+        ready_q[3] = 0;
         for (i = 0; i < 16; i = i+1)begin
             Operand_q[0][i] = 0;
             Operand_q[1][i] = 0;
@@ -197,6 +204,8 @@ always @(posedge CLK or negedge RESET) begin
             old_regs[1][i] = 0;
             old_regs[2][i] = 0;
             mult_ready[i]  = 1;
+            load_special_mappings[i] = 0;
+            load_special_vals[i]     = 0;
         end
     end else if (CLK) begin
         if (rename_enque && (empty_spot < 16)) begin
@@ -207,11 +216,14 @@ always @(posedge CLK or negedge RESET) begin
             issue_q[empty_spot][137:0]   <= rename_issueinfo[137:0];
             ready_q[0][empty_spot] <= (MapA == 0) ? 1 : ~busy[MapA];//(jum p_flag & jr _flag) ? 1 : (link_flag ? 0 :1);
             ready_q[1][empty_spot] <= (MapB == 0) ? (jump_flag ? 0 : 1) : ~busy[MapB];
-            ready_q[2][empty_spot] <= ((RegDest_flag | link_flag | (MapWr == 0) | RegWr_flag) & !MemWr_flag & !MemRd_flag) ? 1 : ~busy[MapWr]; //This is for Memwrite
+            ready_q[2][empty_spot] <= ((RegDest_flag | link_flag | (MapWr == 0) | RegWr_flag) & !MemWr_flag) ? 1 : ~busy[MapWr]; //This is for Memwrite
+            ready_q[3][empty_spot] <= (MemRd_flag & ((alu_con == 6'b101101) || (alu_con == 6'b101110))) ? ~busy[load_special_mapping] : 1;
+            load_special_mappings[empty_spot] <= load_special_mapping;
 
             Operand_q[0][empty_spot] <= PhysReg[MapA];
             Operand_q[1][empty_spot] <= (MapB == 0) ? OpB1 : PhysReg[MapB];
-            Operand_q[2][empty_spot] <= ((RegDest_flag | link_flag | (MapWr == 0) | RegWr_flag) & !MemWr_flag & !MemRd_flag) ? 0 : PhysReg[MapWr];
+            Operand_q[2][empty_spot] <= ((RegDest_flag | link_flag | (MapWr == 0) | RegWr_flag) & !MemWr_flag) ? 0 : PhysReg[MapWr];
+            load_special_vals[empty_spot] <= (MemRd_flag & ((alu_con == 6'b101101) || (alu_con == 6'b101110))) ? PhysReg[load_special_mapping] : 0;
 
             old_regs[0][empty_spot] = rename_A;
             old_regs[1][empty_spot] = rename_B;
@@ -248,7 +260,9 @@ always @(posedge CLK or negedge RESET) begin
 
             operandA1_exe   <= Operand_q[0][instr_out_index];
             operandB1_exe   <= Operand_q[1][instr_out_index];
-            MemWriteData_exe<= Operand_q[2][instr_out_index];
+            MemWriteData_exe<= issue_q[instr_out_index][96] ? load_special_vals[instr_out_index] : Operand_q[2][instr_out_index];
+
+            instr_num_exe                   <= instr_num[instr_out_index];
 
             old_regs[0][instr_out_index]    <= 0;
             old_regs[1][instr_out_index]    <= 0;
@@ -256,13 +270,17 @@ always @(posedge CLK or negedge RESET) begin
 
             empty_in_issue[instr_out_index] <= 1;
             issue_q[instr_out_index]        <= 0;
+            load_special_mappings[instr_out_index] <= 0;
+            load_special_vals[instr_out_index]     <= 0;
             ready_q[0][instr_out_index]     <= 0;
             ready_q[1][instr_out_index]     <= 0;
             ready_q[2][instr_out_index]     <= 0;
+            ready_q[3][instr_out_index]     <= 0;
             Operand_q[0][instr_out_index]   <= 0;
             Operand_q[1][instr_out_index]   <= 0;
             Operand_q[2][instr_out_index]   <= 0;
-            instr_num_exe                   <= instr_num[instr_out_index];
+            instr_num[instr_out_index]      <= 0;
+
         end else begin
             RegWr_exe       <= 0;
             instr_exe       <= 0;
@@ -291,6 +309,7 @@ always @(posedge CLK or negedge RESET) begin
             operandB1_exe   <= 0;
             MemWriteData_exe<= 0;
 
+            instr_num_exe   <= 0;
         end
     end
 end
@@ -313,18 +332,22 @@ always @(negedge CLK or negedge RESET) begin
                     Operand_q[0][i] = ((issue_q[i][5:0] == exe_broadcast_map) && (issue_q[i][5:0] != 0) && (ready_q[0] != 1)) ? exe_broadcast_val : Operand_q[0][i];
                     Operand_q[1][i] = ((issue_q[i][11:6] == exe_broadcast_map) && (issue_q[i][11:6] != 0) && (ready_q[1] != 1)) ? exe_broadcast_val : Operand_q[1][i];
                     Operand_q[2][i] = ((issue_q[i][17:12] == exe_broadcast_map) && (issue_q[i][17:12] != 0) && (ready_q[2] != 1)) ? exe_broadcast_val : Operand_q[2][i];
+                    load_special_vals[i] = ((load_special_mappings[i] == exe_broadcast_map) && (ready_q[3] != 1)) ? exe_broadcast_val : load_special_vals[i];
                     ready_q[0][i] = (issue_q[i][5:0] == exe_broadcast_map) ? 1 : ready_q[0][i];
                     ready_q[1][i] = (issue_q[i][11:6] == exe_broadcast_map) ? 1 : ready_q[1][i];
                     ready_q[2][i] = (issue_q[i][17:12] == exe_broadcast_map) ? 1 : ready_q[2][i];
+                    ready_q[3][i] = (load_special_mappings[i] == exe_broadcast_map) ? 1 : ready_q[3][i];
                 end
 
                 if ((empty_in_issue[i] != 1) && mem_broadcast) begin
                     Operand_q[0][i] = ((issue_q[i][5:0] == mem_broadcast_map) && (issue_q[i][5:0] != 0) && (ready_q[0] != 1)) ? mem_broadcast_val : Operand_q[0][i];
                     Operand_q[1][i] = ((issue_q[i][11:6] == mem_broadcast_map) && (issue_q[i][11:6] != 0) && (ready_q[1] != 1)) ? mem_broadcast_val : Operand_q[1][i];
                     Operand_q[2][i] = ((issue_q[i][17:12] == mem_broadcast_map) && (issue_q[i][17:12] != 0) && (ready_q[2] != 1)) ? mem_broadcast_val : Operand_q[2][i];
+                    load_special_vals[i] = ((load_special_mappings[i] == mem_broadcast_map) && (ready_q[3] != 1)) ? mem_broadcast_val : load_special_vals[i];
                     ready_q[0][i] = (issue_q[i][5:0] == mem_broadcast_map) ? 1 : ready_q[0][i];
                     ready_q[1][i] = (issue_q[i][11:6] == mem_broadcast_map) ? 1 : ready_q[1][i];
                     ready_q[2][i] = (issue_q[i][17:12] == mem_broadcast_map) ? 1 : ready_q[2][i];
+                    ready_q[3][i] = (load_special_mappings[i] == mem_broadcast_map) ? 1 : ready_q[3][i];
                 end// else begin
                 // //we actually don't need this since we can check if item is not valid in issue queue with the empty_in_issue array, but just in case.
                 //     Operand_q[0][i] = 0;
@@ -346,13 +369,13 @@ always @(posedge CLK) begin
         $display("\t\t\t\tISSUE");
         for(i = 0; i < 16; i = i + 1) begin
             if((i == instr_out_index) & !STALL) begin
-                $display("[%b] %x from %x : %b = %b & %b & %b & %b  <<<---   OUT", ~empty_in_issue[i], issue_q[i][81:50], issue_q[i][49:18], instr_ready[i], ready_q[0][i], ready_q[1][i], ready_q[2][i], mult_ready[i]);
+                $display("[%d] %x from %x : %b = %b & %b & %b & %b & %b  <<<---   OUT", instr_num[i], issue_q[i][81:50], issue_q[i][49:18], instr_ready[i], ready_q[0][i], ready_q[1][i], ready_q[2][i], ready_q[3][i], mult_ready[i]);
             end
             else if(i == empty_spot) begin
-                $display("[%b] %x from %x : %b = %b & %b & %b & %b  <<<---   %x", ~empty_in_issue[i], issue_q[i][81:50], issue_q[i][49:18], instr_ready[i], ready_q[0][i], ready_q[1][i], ready_q[2][i], mult_ready[i], rename_issueinfo[81:50]);
+                $display("[%d] %x from %x : %b = %b & %b & %b & %b & %b  <<<---   %x", instr_num[i], issue_q[i][81:50], issue_q[i][49:18], instr_ready[i], ready_q[0][i], ready_q[1][i], ready_q[2][i], ready_q[3][i], mult_ready[i], rename_issueinfo[81:50]);
             end
             else begin
-                $display("[%b] %x from %x : %b = %b & %b & %b & %b", ~empty_in_issue[i], issue_q[i][81:50], issue_q[i][49:18], instr_ready[i], ready_q[0][i], ready_q[1][i], ready_q[2][i], mult_ready[i]);
+                $display("[%d] %x from %x : %b = %b & %b & %b & %b & %b", instr_num[i], issue_q[i][81:50], issue_q[i][49:18], instr_ready[i], ready_q[0][i], ready_q[1][i], ready_q[2][i], ready_q[3][i], mult_ready[i]);
             end
         end
         $display("Instr OUT index: %d", instr_out_index);

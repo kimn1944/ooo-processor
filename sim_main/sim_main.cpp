@@ -820,7 +820,7 @@ int main(int argc, char **argv)
 */
 			if(((nextInstructionAddr & 0xFFFFFF00) != 0xBFC00000) && (!read_register(28))) {
 				printf("!!!GP Tampering (==0) @ 0x%08x!!!\n", nextInstructionAddr);
-				// duration = CLOCK_COUNTER;
+				duration = CLOCK_COUNTER;
 			}
 
 			mem_request_clock();
@@ -974,7 +974,7 @@ int main(int argc, char **argv)
 						ofstream _file;
 						_file.open(filename.c_str(), ios::out | ios::trunc);	//And truncate it (since that's what file.cpp wants)
 						_file.close();
-						duration = CLOCK_COUNTER;
+						// duration = CLOCK_COUNTER;
 					break;}
 					case 4006:{cout << "CloseFile at time:" << CLOCK_COUNTER << endl;FDT_state[read_register(4)]=0;write_register(2,0);						//duration = 0;
 break;}			//close file

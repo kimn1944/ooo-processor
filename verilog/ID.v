@@ -325,6 +325,7 @@ module ID(
 
     wire [169:0] rename_entry_issue;
     wire rename_entry_issue_allocate;
+    wire [5:0] load_special_mapping
     // wire [5:0] mappedS;
     // wire [5:0] mappedT;
     // wire [5:0] mappedD;
@@ -373,6 +374,7 @@ module ID(
         .entry_allocate_issue(rename_entry_issue_allocate),
         .entry_issue(rename_entry_issue),
         .busy(busy),
+        .entry_load_special(load_special_mapping),
 
         .entry_ld_lsq(),
         .entry_st_lsq(),
@@ -405,6 +407,7 @@ module ID(
         .rename_A(oldA),
         .rename_B(oldB),
         .rename_C(oldC),
+        .load_special_mapping(load_special_mapping),
 
         // EXE inputs
         .exe_broadcast(broadcast_flag),
