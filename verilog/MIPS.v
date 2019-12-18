@@ -118,7 +118,7 @@ module MIPS (
     wire        MemWrite1_IDEXE;
     wire [4:0]  ShiftAmount1_IDEXE;
 
-    wire [33:0] IF_all_info_EXE;
+    wire [34:0] IF_all_info_EXE;
 
     wire halt;
 

@@ -38,7 +38,7 @@ module ID(
     input [5:0] mem_broadcast_map,
 
     output halt,
-    output reg [169:0] all_info_IF,
+    output reg [34:0] all_info_IF,
 
     // to exe
     output reg [5:0] issue_RegWr_map,
@@ -353,8 +353,8 @@ module ID(
         .lsq_halt(0),
         .rob_halt(0),
 
-        .exe_busyclear_flag(RegWrite1_IN),
-        .exe_busyclear_reg(F_R[WriteRegister1_IN]),
+        .exe_busyclear_flag(temp_do),
+        .exe_busyclear_reg(temp_map),
 
         .reg_to_map_FRAT(reg_to_map_FRAT),
         .new_mapping(new_mapping),
@@ -397,9 +397,9 @@ module ID(
         .rename_C(oldC),
 
         // EXE inputs
-        .exe_broadcast(0),
-        .exe_broadcast_map(0),
-        .exe_broadcast_val(0),
+        .exe_broadcast(broadcast_flag),
+        .exe_broadcast_map(broadcast_map),
+        .exe_broadcast_val(broadcast_val),
 
         // phys reg input
         .PhysReg(REGS),
@@ -409,7 +409,7 @@ module ID(
 
         // MEM inputs
         .mem_broadcast(RegWrite1_IN),
-        .mem_broadcast_map(F_R[WriteRegister1_IN]),
+        .mem_broadcast_map(mem_broadcast_map),
         .mem_broadcast_val(WriteData1_IN),
 
         // outputs to EXE
@@ -437,6 +437,7 @@ module ID(
         .A_exe(A_exe),
         .B_exe(B_exe),
         .C_exe(C_exe),
+        .C_map_exe(C_map_exe),
 
         .instr_num_exe(instr_num_exe),
 
@@ -468,6 +469,7 @@ module ID(
     wire [4:0]    A_exe;
     wire [4:0]    B_exe;
     wire [4:0]    C_exe;
+    wire [5:0]    C_map_exe;
 
     wire          halt_rename;
     integer       instr_num_exe;
@@ -535,13 +537,13 @@ module ID(
             ShiftAmount1_OUT <= shamt_exe;
             Instr1_PC_OUT <= instr_pc_exe;
             SYS <= sys_exe;
-            all_info_IF <= {alt_PC_exe, jump_exe, jumpReg_exe};
-            // issue_RegWr_map <= mappedD;
-            // issue_RegWr_flag <= (WriteRegister1 != 5'd0) ? rename_out[93] : 1'd0;
+            all_info_IF <= {alt_PC_exe, jumpReg_exe, jump_exe, link_exe};
+            issue_RegWr_map <= C_map_exe;
+            issue_RegWr_flag <= (C_exe != 5'd0) ? RegWr_flag_exe : 1'd0;
         end
         if(1) begin
             $display("ID1:Instr=%x,Instr_PC=%x;SYS=%d()", Instr1_IN, Instr_PC_IN, rename_entry_issue[90]);
-            $display("ID Flush: %x", flush);
+            $display("ID Flush: %x, Broadcast flag: %x, Broadcast Reg: %d, Broadcast Map: %d, Broadcast Val: %x", flush, broadcast_flag, broadcast_reg, broadcast_map, broadcast_val);
             //$display("ID1:A:Reg[%d]=%x; B:Reg[%d]=%x; Write?%d to %d",RegA1, OpA1, RegB1, OpB1, (WriteRegister1!=5'd0)?RegWrite1:1'd0, WriteRegister1);
             //$display("ID1:ALU_Control=%x; MemRead=%d; MemWrite=%d (%x); ShiftAmount=%d",ALU_control1, MemRead1, MemWrite1, MemWriteData1, shiftAmount1);
 			  end

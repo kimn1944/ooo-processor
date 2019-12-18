@@ -276,7 +276,7 @@ always @(posedge CLK or negedge RESET) begin
 		WriteRegister1_OUT <= 0;
 		RegWrite1_OUT <= 0;
 		WriteData1_OUT <= 0;
-    new_mapping_RRAT <= 0;
+    broadcast_map <= 0;
 		$display("MEM:RESET");
 	end else if(CLK) begin
 			Instr1_OUT <= Instr1_IN;

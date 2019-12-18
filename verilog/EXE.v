@@ -20,7 +20,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 module EXE(
 //***************************//***************************//********************
-    input [33:0] IF_all_info,
+    // alt pc jreg, jump, link
+    input [34:0] IF_all_info,
     output reg Request_Alt_PC,
     output reg [31:0] alt_addr,
     output flush,
@@ -154,7 +155,7 @@ integer instr_num_backup;
 always @(posedge CLK) begin
     if(Instr1_PC_IN != 0) begin
         take <= Request_Alt_PC1;
-        addr <= IF_all_info[0] ? A1 : IF_all_info[33:2];
+        addr <= IF_all_info[2] ? A1 : IF_all_info[34:3];
     end
 end
 
@@ -187,7 +188,7 @@ always @(posedge CLK or negedge RESET) begin
         WriteRegister1_OUT <= WriteRegister1_IN;
         MemWriteData1_OUT <= MemWriteData1;
         // RegWrite1_OUT <= RegWrite1_IN;
-        RegWrite1_OUT <= ((Request_Alt_PC1 & IF_all_info[100]) | (issue_RegWr_flag & !MemRead1_IN)) ? 0 : RegWrite1_IN;
+        RegWrite1_OUT <= ((Request_Alt_PC1 & IF_all_info[0]) | (issue_RegWr_flag & !MemRead1_IN)) ? 0 : RegWrite1_IN;
         ALU_Control1_OUT <= ALU_Control1_IN;
         MemRead1_OUT <= MemRead1_IN;
         MemWrite1_OUT <= MemWrite1_IN;
@@ -203,7 +204,7 @@ always @(posedge CLK or negedge RESET) begin
 
         // RegWr_flag_lsq      <= issue_RegWr_flag;
         // broadcast_flag      <= (instr_num_backup != issue_branch_flag) ? (Request_Alt_PC1 & issue_link_flag) : ((issue_instr_num != instr_num_backup) & issue_RegWr_flag & !MemRead1_IN & !issue_sys_flag);
-        broadcast_flag      <= ((Request_Alt_PC1 & IF_all_info[100]) | (issue_RegWr_flag & !MemRead1_IN)) ? 1 : 0;
+        broadcast_flag      <= ((Request_Alt_PC1 & IF_all_info[0]) | (issue_RegWr_flag & !MemRead1_IN)) ? 1 : 0;
         broadcast_map       <= issue_RegWr_map;
         broadcast_reg       <= WriteRegister1_IN;
         broadcast_val       <= ALU_result1;

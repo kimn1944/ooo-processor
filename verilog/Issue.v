@@ -65,6 +65,7 @@ module Issue (
     output reg [4:0]    A_exe,
     output reg [4:0]    B_exe,
     output reg [4:0]    C_exe,
+    output reg [5:0]    C_map_exe,
 
     output integer      instr_num_exe,
 
@@ -243,6 +244,7 @@ always @(posedge CLK or negedge RESET) begin
             A_exe           <= old_regs[0][instr_out_index];
             B_exe           <= old_regs[1][instr_out_index];
             C_exe           <= old_regs[2][instr_out_index];
+            C_map_exe       <= issue_q[instr_out_index][17:12];
 
             operandA1_exe   <= Operand_q[0][instr_out_index];
             operandB1_exe   <= Operand_q[1][instr_out_index];

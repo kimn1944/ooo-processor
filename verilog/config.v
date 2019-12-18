@@ -24,8 +24,8 @@
 `define REMAP
 
 // commenting
-// `define QUEUE
-// `define TABLE
+`define QUEUE
+`define TABLE
 `define RENAME
 `define BUSY
 `define ISSUE
