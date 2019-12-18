@@ -267,7 +267,7 @@ module ID(
 
     wire [4:0] temp_to_remap;
     wire [5:0] temp_map;
-    wire temp_do; 
+    wire temp_do;
 
     assign temp_to_remap = broadcast_flag ? broadcast_reg : WriteRegister1_IN;
     assign temp_map = broadcast_flag ? broadcast_map : mem_broadcast_map;
@@ -308,7 +308,8 @@ module ID(
 
     assign rsRawVal1 = REGS[mappedS];
     assign rtRawVal1 = REGS[mappedT];
-    assign WriteRegisterRawVal1 = REGS[mappedD];
+    assign WriteRegisterRawVal1 = rename_out[96] ? REGS[entry_load_special] : REGS[mappedD];
+    // assign WriteRegisterRawVal1 = REGS[mappedD];
 
     wire halt_rename_queue;
 
@@ -334,6 +335,8 @@ module ID(
     assign Instr1_IN         = rename_out[81:50];
     assign Instr_PC_IN       = rename_out[49:18];
     assign Instr_PC_Plus4_IN = rename_out[49:18] + 32'd4;
+
+    wire [5:0] entry_load_special;
 
     Rename #() Rename
         (.CLK(CLK),
@@ -368,6 +371,7 @@ module ID(
         .entry_allocate_issue(),
         .entry_issue(),
         .busy(busy),
+        .entry_load_special(entry_load_special),
 
         .entry_ld_lsq(),
         .entry_st_lsq(),
@@ -563,7 +567,7 @@ module ID(
         if(1) begin
             $display("ID1:Instr=%x,Instr_PC=%x;SYS=%d()", Instr1_IN, Instr_PC_IN, rename_out[90]);
             $display("ID Flush: %x, Broadcast flag: %x, Broadcast Reg: %d, Broadcast Map: %d, Broadcast Val: %x", flush, broadcast_flag, broadcast_reg, broadcast_map, broadcast_val);
-            //$display("ID1:A:Reg[%d]=%x; B:Reg[%d]=%x; Write?%d to %d",RegA1, OpA1, RegB1, OpB1, (WriteRegister1!=5'd0)?RegWrite1:1'd0, WriteRegister1);
+            // $display("ID1: A:Reg[%d] = %x; B:Reg[%d] = %x; Write ? %d to %d", RegA1, OpA1, RegB1, OpB1, (WriteRegister1 != 5'd0) ? RegWrite1 : 1'd0, WriteRegister1);
             //$display("ID1:ALU_Control=%x; MemRead=%d; MemWrite=%d (%x); ShiftAmount=%d",ALU_control1, MemRead1, MemWrite1, MemWriteData1, shiftAmount1);
 			  end
     end

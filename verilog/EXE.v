@@ -216,7 +216,7 @@ always @(posedge CLK or negedge RESET) begin
 		if(comment1) begin
                 $display("EXE:Instr1=%x,Instr1_PC=%x,ALU_result1=%x; Write?%d to %d",Instr1_IN,Instr1_PC_IN,ALU_result1, RegWrite1_IN, WriteRegister1_IN);
                 $display("Take: %x, Addr: %x, Request: %x, Alt addr: %x", take, addr, Request_Alt_PC, alt_addr);
-                //$display("EXE:ALU_Control1=%x; MemRead1=%d; MemWrite1=%d (Data:%x)",ALU_Control1_IN, MemRead1_IN, MemWrite1_IN, MemWriteData1);
+                $display("EXE: ALU_Control1 = %x; MemRead1 = %d; MemWrite1 = %d (Data: %x)",ALU_Control1_IN, MemRead1_IN, MemWrite1_IN, MemWriteData1);
                 // $display("EXE:OpA1=%x; OpB1=%x; HI=%x; LO=%x", A1, B1, new_HI,new_LO);
 			end
 	end

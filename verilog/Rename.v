@@ -48,6 +48,8 @@ module Rename (
     output reg [169:0] entry_issue, //Instr [88:57], instr_pc [56:25], control[24:18], MAPC[17:12], MAPB[11:6], MAPA[5:0]
     output reg [63:0] busy,
 
+    output reg [5:0] entry_load_special,
+
     //to LSQ
     output reg entry_ld_lsq,
     output reg entry_st_lsq,
@@ -118,6 +120,7 @@ always @(negedge CLK or negedge RESET) begin
         entry_issue[169:18] <= {id_control, id_instr, id_instrpc};
         entry_issue[11:0]  <= {frat_my_map[id_RegB], frat_my_map[id_RegA]};
         entry_issue[17:12] <= (id_RegWr_flag | id_ld_flag) ? free_reg : frat_my_map[id_RegWr];
+        entry_load_special <= frat_my_map[id_RegWr];
 
         remap_FRAT <= id_RegWr_flag | id_ld_flag;
         new_mapping <= free_reg;
