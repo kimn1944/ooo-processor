@@ -98,10 +98,6 @@ QUEUE_obj #(.INIT(1), .LENGTH(32), .WIDTH(6)) freelist (
       .r_mapping(rrat_map),
       .halt(free_halt));
 
-wire [5:0] busy_index_A;
-wire [5:0] busy_index_B;
-wire [5:0] busy_index_C;
-
 always @(negedge CLK or negedge RESET) begin
     if(!RESET) begin
         entry_allocate_ROB <= 0;

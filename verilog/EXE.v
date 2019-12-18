@@ -25,7 +25,7 @@ module EXE(
     output reg Request_Alt_PC,
     output reg [31:0] alt_addr,
     output flush,
-    output [169:0] all_info_MEM,
+    output [34:0] all_info_MEM,
 
     input [5:0] issue_RegWr_map,
     input issue_RegWr_flag,

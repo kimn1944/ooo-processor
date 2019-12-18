@@ -25,7 +25,6 @@ module ID(
 
     input [31:0] instr1_in,
     input [31:0] instr_pc_in,
-    input [31:0] instr_pc_plus4_in,
     input flush,
 
     // from exe
@@ -99,7 +98,9 @@ module ID(
     .enque_data({instr_pc_in, instr1_in}),
     .deque(1),
     .deque_data(deque_data),
+    /* verilator lint_off PINCONNECTEMPTY */
     .r_mapping(),
+    /* verilator lint_on PINCONNECTEMPTY */
     .halt(halt_IF));
 
     wire link;
@@ -192,7 +193,9 @@ module ID(
     .enque_data(rename_entry),
     .deque(1),
     .deque_data(rename_queue_out),
+    /* verilator lint_off PINCONNECTEMPTY */
     .r_mapping(),
+    /* verilator lint_on PINCONNECTEMPTY */
     .halt(rename_halt));
 
     wire [4:0] keyS;
@@ -211,36 +214,33 @@ module ID(
 //******************************************************************************
 
 
-    wire [4:0]		RegA1;		//Register A
-    wire [4:0]		RegB1;		//Register B
-    wire [4:0]		WriteRegister1;	//Register to write
-    wire [31:0]	WriteRegisterRawVal1;
-    wire [31:0]	MemWriteData1;		//Data to write to memory
-    wire	[31:0]	OpA1;		//Operand A
-    wire [31:0]	OpB1;		//Operand B
+    // wire [4:0]		RegA1;		//Register A
+    // wire [4:0]		RegB1;		//Register B
+    // wire [4:0]		WriteRegister1;	//Register to write
+    // wire [31:0]	WriteRegisterRawVal1;
+    // wire [31:0]	MemWriteData1;		//Data to write to memory
+    // wire	[31:0]	OpA1;		//Operand A
+    // wire [31:0]	OpB1;		//Operand B
 
-    wire [31:0]    rsRawVal1;
-    wire [31:0]    rtRawVal1;
+    // wire [31:0]    rsRawVal1;
+    // wire [31:0]    rtRawVal1;
 
 
 
     // assign WriteRegister1 = RegDst1?rd1:(link1?5'd31:rt1);
-    assign WriteRegister1 = oldC;
-    assign MemWriteData1 = WriteRegisterRawVal1;
+    // assign WriteRegister1 = oldC;
+    // assign MemWriteData1 = WriteRegisterRawVal1;
 
-    //OpA will always be rsval, although it might be unused.
-    assign OpA1 = rsRawVal1;
-    // assign RegA1 = link1?5'b00000:rs1;
-    assign RegA1 = oldA;
-    //When we branch/jump and link, OpB needs to store return address
-    //Otherwise, if we have writeregister==rd, then rt is used for OpB.
-    //if writeregister!=rd, then writeregister ==rt, and we use immediate instead.
+    // assign OpA1 = rsRawVal1;
+    // // assign RegA1 = link1?5'b00000:rs1;
+    // assign RegA1 = oldA;
+
     //                    br                 link               opB                                rd                         opB
     // assign OpB1 = rename_out[97] ? (rename_out[100] ? rename_out[169:138] : rtRawVal1) : (rename_out[99] ? rtRawVal1 : rename_out[169:138]);
     // assign OpB1 = (rename_entry_issue[97] & rename_entry_issue[100]) ? rename_entry_issue[169:138] : (rename_entry_issue[99] ? rtRawVal1 : rename_entry_issue[169:138]);
-    assign OpB1 = (oldB == 0) ? rename_entry_issue[169:138] : rtRawVal1;
-    // assign RegB1 = RegDst1?rt1:5'd0;
-    assign RegB1 = oldB;
+    // assign OpB1 = (oldB == 0) ? rename_entry_issue[169:138] : rtRawVal1;
+    // // assign RegB1 = RegDst1?rt1:5'd0;
+    // assign RegB1 = oldB;
 
     //******************************************************************************
 
@@ -259,8 +259,10 @@ module ID(
         .remap(remap_FRAT),
         .new_map(R_F),
         .overwrite(0),
+        /* verilator lint_off PINCONNECTEMPTY */
         .returned_mapping(),
         .return_map(),
+        /* verilator lint_off PINCONNECTEMPTY */
         .my_map(F_R));
 
     wire [4:0] temp_to_remap;
@@ -304,9 +306,9 @@ module ID(
         .update2(RegWrite1_IN),
         .regs(REGS));
 
-    assign rsRawVal1 = REGS[mappedS];
-    assign rtRawVal1 = REGS[mappedT];
-    assign WriteRegisterRawVal1 = REGS[mappedD];
+    // assign rsRawVal1 = REGS[mappedS];
+    // assign rtRawVal1 = REGS[mappedT];
+    // assign WriteRegisterRawVal1 = REGS[mappedD];
 
     wire halt_rename_queue;
 
@@ -316,17 +318,17 @@ module ID(
 
     wire [169:0] rename_entry_issue;
     wire rename_entry_issue_allocate;
-    wire [5:0] mappedS;
-    wire [5:0] mappedT;
-    wire [5:0] mappedD;
+    // wire [5:0] mappedS;
+    // wire [5:0] mappedT;
+    // wire [5:0] mappedD;
     wire [4:0] oldA;
     wire [4:0] oldB;
     wire [4:0] oldC;
     wire [63:0] busy;
     integer instr_num;
-    assign mappedS = rename_entry_issue[5:0];
-    assign mappedT = rename_entry_issue[11:6];
-    assign mappedD = rename_entry_issue[17:12];
+    // assign mappedS = rename_entry_issue[5:0];
+    // assign mappedT = rename_entry_issue[11:6];
+    // assign mappedD = rename_entry_issue[17:12];
     assign Instr1_IN         = rename_entry_issue[81:50];
     assign Instr_PC_IN       = rename_entry_issue[49:18];
 

@@ -93,7 +93,9 @@ module MIPS (
         .RESET(RESET),
         .Instr1_OUT(Instr1_IFID),
         .Instr_PC_OUT(Instr_PC_IFID),
+        /* verilator lint_off PINCONNECTEMPTY */
         .Instr_PC_Plus4(),
+        /* verilator lint_off PINCONNECTEMPTY */
         .STALL(halt),
         .Request_Alt_PC(request_alt_pc),
         .Alt_PC(alt_addr),
@@ -192,6 +194,48 @@ module MIPS (
     wire [4:0] exe_broadcast_reg;
 
     wire [5:0] exe_RegWr_map;
+
+
+    ROB ROB (
+        .clk(CLK),
+        .reset(RESET),
+        .stall(0),
+
+        .rename_enque(0),
+        .rename_instr_num(0),
+        .rename_RegWr(0),
+        .rename_enque_data(0),
+
+        .exe_complete_flag(0),
+        .exe_broadcast_flag(0),
+        .exe_Request_alt_pc(0),
+        .exe_Alt_PC(0),
+        .exe_instr_num(0),
+
+        .mem_complete_flag(0),
+        .mem_broadcast_flag(0),
+        .mem_instr_num(0),
+
+        .rrat_map(),
+
+        .Request_alt_pc_IF(),
+        .Alt_PC_IF(),
+
+        .head_instr_num(),
+
+        .ROB_halt(),
+        .rename_free(),
+        .rename_free_reg(),
+
+        .newMap_flag_rrat(),
+        .reg2map_rrat(),
+        .newMap_rrat(),
+
+        .SYS(),
+        .flush());
+
+
+
     //******************************************************************************
 	EXE EXE(
     //******************************************************************************
@@ -292,15 +336,7 @@ module MIPS (
         .data_read_fDM(data_read_fDC),
         .MemRead_2DM(read_2DC),
         .MemWrite_2DM(write_2DC)
-`ifdef HAS_FORWARDING
-        ,
-        .WriteData1_async(BypassData1_MEMID)
-`endif
     );
 
-`ifdef HAS_FORWARDING
-    assign BypassReg1_MEMID = WriteRegister1_EXEMEM;
-    assign BypassValid1_MEMID = RegWrite1_EXEMEM;
-`endif
 /* verilator lint_on BLKSEQ */
 endmodule

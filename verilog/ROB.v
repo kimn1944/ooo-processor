@@ -59,6 +59,7 @@ module ROB
     output reg flush);
 
 
+    integer i;
     reg [5:0]   commit_pointer;
     reg [5:0]   enque_pointer;
     integer     queue_size;
@@ -85,21 +86,21 @@ module ROB
     //if hilo, issue at rob head. If store, access memory at rob head, If jump, branch, sys, commit at ROB head
 
 //non speculative implementation
-always @(posedge CLK or negedge RESET)begin
-    if (!RESET) begin
+always @(posedge clk or negedge reset)begin
+    if (!reset) begin
         enque_pointer   <= 0;
         commit_pointer  <= 0;
         queue_size      <= 0;
         Alt_PC_dly      <= 0; //check if rob
         Req_alt_PC_dly  <= 0;
         flush_dly       <= 0;
-        for (i = 0, i < 64, i++) begin
+        for (i = 0; i < 64; i++) begin
             remap_info_q[i]    = 0;
             ready2commit_q[i]  = 0;
             mispre_q[i]        = 0;
             instr_num_q[i]     = 0;
         end
-    end else if (CLK) begin
+    end else if (clk) begin
         if(rename_enque && (queue_size < 64)) begin
             ready2commit_q[enque_pointer]   <= rename_ready2commit;
             instr_num_q[enque_pointer]      <= rename_instr_num;
@@ -112,8 +113,8 @@ always @(posedge CLK or negedge RESET)begin
         queue_size <= (rename_enque && (queue_size < 64)) ? ((ready2commit_q[commit_pointer][2]) ? queue_size : queue_size +1) : ((ready2commit_q[commit_pointer][2]) ? queue_size - 1 : queue_size);
 
         if(ready2commit_q[commit_pointer][2]) begin
-            Request_alt_pc_IF<= Req_alt_PC_dly ? Req_alt_PC_dly : (ready2commit_q[commit_pointer][0] ? 0 : mispred_q[commit_pointer][32]);
-            Alt_PC_IF        <= Req_alt_PC_dly ? ALT_PC_dly : (ready2commit_q[commit_pointer][0] ? 0 : mispre_q[commit_pointer][31:0]);
+            Request_alt_pc_IF<= Req_alt_PC_dly ? Req_alt_PC_dly : (ready2commit_q[commit_pointer][0] ? 0 : mispre_q[commit_pointer][32]);
+            Alt_PC_IF        <= Req_alt_PC_dly ? Alt_PC_dly : (ready2commit_q[commit_pointer][0] ? 0 : mispre_q[commit_pointer][31:0]);
 
             newMap_flag_rrat <= remap_info_q[commit_pointer][11];
             newMap_rrat      <= remap_info_q[commit_pointer][10:5];
@@ -154,11 +155,11 @@ always @(posedge CLK or negedge RESET)begin
 end
 
 
-always @(negedge CLK)begin
-    if (RESET && !CLK && !flush) begin
-        if (exe_complete_flag or mem_complete_flag )begin
-            for (i = 0; i < 64; i = i + 1) begin
-                ready2commit_q[i][2] <= ((exe_complete_flag & (exe_instr_num == instr_num_q[i])) | (mem _complete_flag & (mem_instr_num == instr_num_q[i])) & (instr_num_q[i] != 0)) ? 1 : ready2commit_q[i][2]; //complection bit
+always @(negedge clk) begin
+    if (reset & !clk & !flush) begin
+        if (exe_complete_flag | mem_complete_flag) begin
+            for(i = 0; i < 64; i = i + 1) begin
+                ready2commit_q[i][2] = ((exe_complete_flag & (exe_instr_num == instr_num_q[i])) | (mem_complete_flag & (mem_instr_num == instr_num_q[i]))) ? 1'b1 : ready2commit_q[i][2];
 
                 if (exe_complete_flag & (exe_instr_num == instr_num_q[i]) & (instr_num_q[i] != 0)) begin
                     mispre_q[i][31:0] <= (ready2commit_q[i][0] & ~ready2commit_q[i][1]) ? exe_Alt_PC : mispre_q[i][31:0]; //jorb and not sys
@@ -166,7 +167,6 @@ always @(negedge CLK)begin
                 end
             end
         end
-
     end
 end
 
