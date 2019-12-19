@@ -49,19 +49,19 @@ module PHYS_REG
               $display("\t\t\t\tPHYSREG");
               for(i = 0; i < 32; i = i + 1) begin
                   if((i == reg_to_update1) && update1) begin
-                      $display("[%d] : %x   <<<--- %x [E]         [%d] : %x", i, arr[i], i + 32, new_value1, arr[i + 32]);
+                      $display("[%d] : %x   <<<--- %x [E]         \t[%d] : %x", i, arr[i], new_value1, i + 32, arr[i + 32]);
                   end
                   else if(((i + 32) == reg_to_update1) && update1) begin
-                      $display("[%d] : %x                     [%d] : %x   <<<--- %x [E]", i, arr[i], i + 32, arr[i + 32], new_value1);
+                      $display("[%d] : %x                     \t[%d] : %x   <<<--- %x [E]", i, arr[i], i + 32, arr[i + 32], new_value1);
                   end
                   else if((i == reg_to_update2) && update2) begin
-                      $display("[%d] : %x   <<<--- %x [M]         [%d] : %x", i, arr[i], new_value2, i + 32, arr[i + 32]);
+                      $display("[%d] : %x   <<<--- %x [M]         \t[%d] : %x", i, arr[i], new_value2, i + 32, arr[i + 32]);
                   end
                   else if(((i + 32) == reg_to_update2) && update2) begin
-                      $display("[%d] : %x                     [%d] : %x   <<<--- %x [M]", i, arr[i], i + 32, arr[i + 32], new_value2);
+                      $display("[%d] : %x                     \t[%d] : %x   <<<--- %x [M]", i, arr[i], i + 32, arr[i + 32], new_value2);
                   end
                   else begin
-                      $display("[%d] : %x                     [%d] : %x", i, arr[i], i + 32, arr[i + 32]);
+                      $display("[%d] : %x                     \t[%d] : %x", i, arr[i], i + 32, arr[i + 32]);
                   end
               end
               $display("\t\t\t\tEND PHYSREG");

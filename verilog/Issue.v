@@ -129,29 +129,12 @@ wire [15:0] instr_ready;
 assign halt_rename = (empty_spot == 16) | (empty_in_issue == 0);
 reg [15:0] mult_ready;
 
-always @ (rob_instr_num or ready_q) begin
+always @ (*) begin
     for (i = 0; i < 16; i = i + 1) begin
         instr_ready[i] = ready_q[0][i] & ready_q[1][i] & ready_q[2][i] & ready_q[3][i] & mult_ready[i];
     end
 end
 
-// wire [15:0] reverse_dir;
-// assign reverse_dir[0] = empty_in_issue[15];
-// assign reverse_dir[1] = empty_in_issue[14];
-// assign reverse_dir[2] = empty_in_issue[13];
-// assign reverse_dir[3] = empty_in_issue[12];
-// assign reverse_dir[4] = empty_in_issue[11];
-// assign reverse_dir[5] = empty_in_issue[10];
-// assign reverse_dir[6] = empty_in_issue[9];
-// assign reverse_dir[7] = empty_in_issue[8];
-// assign reverse_dir[8] = empty_in_issue[7];
-// assign reverse_dir[9] = empty_in_issue[6];
-// assign reverse_dir[10] = empty_in_issue[5];
-// assign reverse_dir[11] = empty_in_issue[4];
-// assign reverse_dir[12] = empty_in_issue[3];
-// assign reverse_dir[13] = empty_in_issue[2];
-// assign reverse_dir[14] = empty_in_issue[1];
-// assign reverse_dir[15] = empty_in_issue[0];
 
 Arbiter_main instr_Arbiter(
     .ready(instr_ready),
@@ -225,9 +208,9 @@ always @(posedge CLK or negedge RESET) begin
             Operand_q[2][empty_spot] <= ((RegDest_flag | link_flag | (MapWr == 0) | RegWr_flag) & !MemWr_flag) ? 0 : PhysReg[MapWr];
             load_special_vals[empty_spot] <= (MemRd_flag & ((alu_con == 6'b101101) || (alu_con == 6'b101110))) ? PhysReg[load_special_mapping] : 0;
 
-            old_regs[0][empty_spot] = rename_A;
-            old_regs[1][empty_spot] = rename_B;
-            old_regs[2][empty_spot] = rename_C;
+            old_regs[0][empty_spot] <= rename_A;
+            old_regs[1][empty_spot] <= rename_B;
+            old_regs[2][empty_spot] <= rename_C;
 
             instr_num[empty_spot]    <= rename_instr_num;
             //WriteRegister1 = RegDst1?rd1:(link1?5'd31:rt1);
@@ -316,7 +299,24 @@ end
 
 always @(negedge CLK or negedge RESET) begin
     if (!RESET | FLUSH) begin
-
+        i = 0;
+        ready_q[0] = 0;
+        ready_q[1] = 0;
+        ready_q[2] = 0;
+        ready_q[3] = 0;
+        for (i = 0; i < 16; i = i+1)begin
+            Operand_q[0][i] = 0;
+            Operand_q[1][i] = 0;
+            Operand_q[2][i] = 0;
+            issue_q[i]      = 0;
+            instr_num[i]    = 0;
+            old_regs[0][i] = 0;
+            old_regs[1][i] = 0;
+            old_regs[2][i] = 0;
+            mult_ready[i]  = 1;
+            load_special_mappings[i] = 0;
+            load_special_vals[i]     = 0;
+        end
     end else if (!CLK) begin
         for(i = 0; i < 16; i = i + 1) begin
             if(empty_in_issue[i] != 1) begin
@@ -367,6 +367,7 @@ end
 always @(posedge CLK) begin
     `ifdef ISSUE
         $display("\t\t\t\tISSUE");
+        // $display("")
         for(i = 0; i < 16; i = i + 1) begin
             if((i == instr_out_index) & !STALL) begin
                 $display("[%d] %x from %x : %b = %b & %b & %b & %b & %b  <<<---   OUT", instr_num[i], issue_q[i][81:50], issue_q[i][49:18], instr_ready[i], ready_q[0][i], ready_q[1][i], ready_q[2][i], ready_q[3][i], mult_ready[i]);

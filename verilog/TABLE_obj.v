@@ -30,7 +30,7 @@ module TABLE_obj
 
     assign my_map = arr;
 
-    always @(negedge clk or negedge reset) begin
+    always @(posedge clk or negedge reset) begin
         if(!reset) begin
             for(i = 0; i < 32; i = i + 1) begin
                 arr[i] = i;

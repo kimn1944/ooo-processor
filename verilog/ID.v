@@ -493,7 +493,7 @@ module ID(
     wire          halt_rename;
     integer       issue_instr_num_exe;
 
-    reg [1:0] bubble;
+    reg bubble;
 
     /* verilator lint_off PINCONNECTEMPTY */
         Decoder #(
@@ -542,7 +542,7 @@ module ID(
             instr_num_exe <= 0;
             $display("ID:RESET");
         end else begin
-            bubble <= bubble;
+            bubble <= bubble + 1'b1;
             Instr1_OUT <= instr_exe;
             OperandA1_OUT <= operandA1_exe;
             OperandB1_OUT <= operandB1_exe;
