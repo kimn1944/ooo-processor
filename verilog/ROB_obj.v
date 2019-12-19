@@ -99,7 +99,7 @@ always @(posedge clk or negedge reset)begin
             instr_q[i]         = 0;
         end
     end else if (clk) begin
-        if(rename_enque && (queue_size < 64)) begin
+        if(rename_enque && (queue_size < 64) && (!(flush_dly ? flush_dly : (ready2commit_q[commit_pointer][0] ? 0 : mispre_q[commit_pointer][32])))) begin
             ready2commit_q[enque_pointer]   <= rename_ready2commit;
             instr_num_q[enque_pointer]      <= rename_instr_num;
             remap_info_q[enque_pointer]     <= rename_remap_info;
@@ -140,9 +140,9 @@ always @(posedge clk or negedge reset)begin
                 Alt_PC_dly      <= 0; //check if rob
                 Req_alt_PC_dly  <= 0;
                 flush_dly       <= 0;
-                flush           <= 0;
-                Alt_PC_IF       <= 0;
-                Request_alt_pc_IF <= 0;
+                // flush           <= 0;
+                // Alt_PC_IF       <= 0;
+                // Request_alt_pc_IF <= 0;
                 newMap_flag_rrat  <= 0;
                 reg2map_rrat      <= 0;
                 newMap_rrat       <= 0;
@@ -190,6 +190,7 @@ always @(posedge clk) begin
     `ifdef ROB
         $display("\t\t\t\tROB");
         $display("ENQUE: %x, ENQUE INSTR: %x REQ ALT: %x, ALT ADDR: %x", rename_enque, rename_instr, Request_alt_pc_IF, Alt_PC_IF);
+        $display("Req Alt Dly: %x, Flush Dly: %x, Mispred: %x", Req_alt_PC_dly, flush_dly, mispre_q[commit_pointer][32]);
         $display("");
         for(i = 0; i < 32; i = i + 1) begin
             if(i == commit_pointer) begin

@@ -282,7 +282,7 @@ module MIPS (
     .all_info_MEM(EXE_all_info_MEM),
     //******************************************************************************
     .CLK(CLK),
-		.RESET(RESET),
+		.RESET(RESET | !flush),
 		.Instr1_IN(Instr1_IDEXE),
 		.Instr1_PC_IN(Instr1_PC_IDEXE),
 		.OperandA1_IN(OperandA1_IDEXE),
@@ -349,7 +349,7 @@ module MIPS (
         .mem_complete_flag_rob(mem_complete_flag_rob),
 //******************************************************************************
         .CLK(CLK),
-        .RESET(RESET),
+        .RESET(RESET | !flush),
         .Instr1_IN(Instr1_EXEMEM),
         .Instr1_PC_IN(Instr1_PC_EXEMEM),
         .ALU_result1_IN(ALU_result1_EXEMEM),

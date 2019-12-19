@@ -519,8 +519,8 @@ module ID(
         );
         /* verilator lint_on PINCONNECTEMPTY */
 
-    always @(posedge CLK or negedge RESET) begin
-        if(!RESET) begin
+    always @(posedge CLK or negedge RESET or posedge flush) begin
+        if(!RESET | flush) begin
             Instr1_OUT <= 0;
             OperandA1_OUT <= 0;
             OperandB1_OUT <= 0;
