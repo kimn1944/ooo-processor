@@ -2,7 +2,6 @@
 //-----------------------------------------
 //            Pipelined MIPS
 //-----------------------------------------
-/* verilator lint_off BLKSEQ */
 module MIPS (
 
     input RESET,
@@ -370,5 +369,36 @@ module MIPS (
         .MemWrite_2DM(write_2DC)
     );
 
-/* verilator lint_on BLKSEQ */
+    LSQ LSQ(
+    .CLK(CLK),
+    .RESET(RESET),
+    .STALL(0),
+    .FLUSH(0),
+
+    .rename_instr_num(0),
+    .rename_entry_lsq(0),
+
+    .exe_MemRd_flag(0),
+    .exe_MemWr_flag(0),
+    .exe_ALU_result(0),
+    .exe_MemWr_data(0),
+    .exe_instr_num(0),
+
+    .mem_miss_halt(0),
+
+    .rob_instr_head_num(0),
+
+    .instr_mem(),
+    .instr_pc_mem(),
+    .ALU_result_mem(),
+    .RegWr_map_mem(),
+    .MemWrData_mem(),
+    .RegWr_flag_mem(),
+    .ALU_Control_mem(),
+    .MemRd_flag_mem(),
+    .MemWr_flag_mem(),
+    .instr_num_mem(),
+
+    .halt_rename_queue());
+
 endmodule
