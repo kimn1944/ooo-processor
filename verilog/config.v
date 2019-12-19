@@ -30,3 +30,4 @@
 `define BUSY
 `define ISSUE
 `define ROB
+`define PHYSREG

@@ -24,7 +24,8 @@ module MEM(
     input [5:0] exe_RegWr_map,
     input integer exe_instr_num,
 
-    output [5:0] broadcast_map,
+    output reg [5:0] broadcast_map,
+    output reg mem_complete_flag_rob,
     output integer mem_instr_num,
 //******************************************************************************
     input CLK,
@@ -280,6 +281,7 @@ always @(posedge CLK or negedge RESET) begin
 		WriteData1_OUT <= 0;
     broadcast_map <= 0;
     mem_instr_num <= 0;
+    mem_complete_flag_rob <= 0;
 		$display("MEM:RESET");
 	end else if(CLK) begin
 			Instr1_OUT <= Instr1_IN;
@@ -290,6 +292,7 @@ always @(posedge CLK or negedge RESET) begin
 
       broadcast_map <= exe_RegWr_map;
       mem_instr_num <= exe_instr_num;
+      mem_complete_flag_rob <= (MemRead1_IN | MemWrite1_IN) & (exe_instr_num != 0);
 			if(comment1) begin
 				$display("MEM:Instr1_OUT=%x,Instr1_PC_OUT=%x,WriteData1=%x; Write?%d to %d",Instr1_IN,Instr1_PC_IN,WriteData1, RegWrite1_IN, WriteRegister1_IN);
 				$display("MEM:data_address_2DM=%x; data_write_2DM(%d)=%x(%d); data_read_fDM(%d)=%x",data_address_2DM,MemWrite_2DM,data_write_2DM,data_write_size_2DM,MemRead_2DM,data_read_fDM);

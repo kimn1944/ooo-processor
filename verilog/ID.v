@@ -49,6 +49,13 @@ module ID(
     output reg allocate_ROB,
     output integer instr_num_ROB,
     output reg [4:0] reg_wrt_ROB,
+
+    // from ROB
+    input newMap_flag_rrat,
+    input [4:0] reg2map_rrat,
+    input [5:0] newMap_rrat,
+    input ROB_halt,
+    input integer rob_instr_num,
 //******************************************************************************
 
     //Writeback stage [register to write]
@@ -290,9 +297,9 @@ module ID(
         // .reg_to_map(reg_to_map_FRAT),
         // .new_mapping(new_mapping),
         // .remap(remap_FRAT),
-        .reg_to_map(temp_to_remap),
-        .new_mapping(temp_map),
-        .remap(temp_do),
+        .reg_to_map(reg2map_rrat),
+        .new_mapping(newMap_rrat),
+        .remap(newMap_flag_rrat),
         .new_map(F_R),
         .overwrite(0),
         .returned_mapping(returned_mapping),
@@ -325,7 +332,7 @@ module ID(
 
     wire [169:0] rename_entry_issue;
     wire rename_entry_issue_allocate;
-    wire [5:0] load_special_mapping
+    wire [5:0] load_special_mapping;
     // wire [5:0] mappedS;
     // wire [5:0] mappedT;
     // wire [5:0] mappedD;
@@ -362,7 +369,7 @@ module ID(
 
         .issue_halt(0),
         .lsq_halt(0),
-        .rob_halt(0),
+        .rob_halt(ROB_halt),
 
         .exe_busyclear_flag(temp_do),
         .exe_busyclear_reg(temp_map),
@@ -380,8 +387,8 @@ module ID(
         .entry_st_lsq(),
         .entry_lsq(),
 
-        .entry_allocate_ROB(all_info_ROB),
-        .entry_ROB(allocate_ROB), // need
+        .entry_allocate_ROB(allocate_ROB),
+        .entry_ROB(all_info_ROB), // need
 
         .oldA(oldA),
         .oldB(oldB),
@@ -391,7 +398,6 @@ module ID(
 
         .instr_num(instr_num));
 //******************************************************************************
-
 
     Issue Issue(
         .CLK(CLK),
@@ -418,7 +424,7 @@ module ID(
         .PhysReg(REGS),
 
         // ROB inputs
-        .rob_instr_num(0),
+        .rob_instr_num(rob_instr_num),
 
         // MEM inputs
         .mem_broadcast(RegWrite1_IN),
@@ -452,7 +458,7 @@ module ID(
         .C_exe(C_exe),
         .C_map_exe(C_map_exe),
 
-        .instr_num_exe(instr_num_exe),
+        .instr_num_exe(issue_instr_num_exe),
 
         .halt_rename(halt_rename));
 
@@ -485,7 +491,7 @@ module ID(
     wire [5:0]    C_map_exe;
 
     wire          halt_rename;
-    integer       instr_num_exe;
+    integer       issue_instr_num_exe;
 
     reg [1:0] bubble;
 
@@ -536,7 +542,7 @@ module ID(
             instr_num_exe <= 0;
             $display("ID:RESET");
         end else begin
-            bubble <= bubble + 2'b1;
+            bubble <= bubble;
             Instr1_OUT <= instr_exe;
             OperandA1_OUT <= operandA1_exe;
             OperandB1_OUT <= operandB1_exe;
@@ -554,7 +560,7 @@ module ID(
             all_info_IF <= {alt_PC_exe, jumpReg_exe, jump_exe, link_exe};
             issue_RegWr_map <= C_map_exe;
             issue_RegWr_flag <= (C_exe != 5'd0) ? RegWr_flag_exe : 1'd0;
-            instr_num_exe <= instr_num_exe;
+            instr_num_exe <= issue_instr_num_exe;
         end
         if(1) begin
             $display("ID1:Instr=%x,Instr_PC=%x;SYS=%d()", Instr1_IN, Instr_PC_IN, rename_entry_issue[90]);

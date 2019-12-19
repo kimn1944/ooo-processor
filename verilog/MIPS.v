@@ -56,8 +56,7 @@ module MIPS (
     //Tell the simulator that everything's ready to go to process a syscall.
     //Make sure that all register data is flushed to the register file, and that
     //all data cache lines are flushed and invalidated.
-    output SYS
-    );
+    output SYS);
 
 
 //Connecting wires between IF and ID
@@ -97,8 +96,8 @@ module MIPS (
         .Instr_PC_Plus4(),
         /* verilator lint_off PINCONNECTEMPTY */
         .STALL(halt),
-        .Request_Alt_PC(request_alt_pc),
-        .Alt_PC(alt_addr),
+        .Request_Alt_PC(ROB_request_alt),
+        .Alt_PC(ROB_alt_addr),
         .Instr_address_2IM(Instr_address_2IC),
         .Instr1_fIM(Instr1_fIC)
     );
@@ -159,6 +158,13 @@ module MIPS (
 
     // from MEM
     .mem_broadcast_map(mem_broadcast_map),
+
+    // from rob
+    .newMap_flag_rrat(newMap_flag_rrat),
+    .reg2map_rrat(reg2map_rrat),
+    .newMap_rrat(newMap_rrat),
+    .ROB_halt(ROB_halt),
+    .rob_instr_num(rob_instr_num),
 //******************************************************************************
 		.WriteRegister1_IN(WriteRegister1_MEMWB),
 		.WriteData1_IN(WriteData1_MEMWB),
@@ -179,9 +185,56 @@ module MIPS (
 		.MemWrite1_OUT(MemWrite1_IDEXE),
 		.ShiftAmount1_OUT(ShiftAmount1_IDEXE),
 
-		.SYS(SYS)
+		.SYS()
 	);
 
+
+
+    wire ROB_halt;
+    wire newMap_flag_rrat;
+    wire [5:0] newMap_rrat;
+    wire [4:0] reg2map_rrat;
+    wire ROB_request_alt;
+    wire [31:0] ROB_alt_addr;
+    integer rob_instr_num;
+    ROB_obj ROB_obj (
+        .clk(CLK),
+        .reset(RESET),
+        .stall(0),
+
+        .rename_enque(allocate_ROB),
+        .rename_instr_num(instr_num_ROB),
+        .rename_instr(all_info_ROB[81:50]),
+        .rename_RegWr(reg_wrt_ROB),
+        .rename_enque_data(all_info_ROB),
+
+        .exe_complete_flag(complete_flag_rob),
+        .exe_broadcast_flag(0),
+        .exe_Request_alt_pc(request_alt_pc),
+        .exe_Alt_PC(alt_addr),
+        .exe_instr_num(exe_instr_num),
+
+        .mem_complete_flag(mem_complete_flag_rob),
+        .mem_broadcast_flag(0),
+        .mem_instr_num(mem_instr_num),
+
+        .Request_alt_pc_IF(ROB_request_alt),
+        .Alt_PC_IF(ROB_alt_addr),
+
+        .head_instr_num(rob_instr_num),
+
+        .ROB_halt(ROB_halt),
+
+        .newMap_flag_rrat(newMap_flag_rrat),
+        .reg2map_rrat(reg2map_rrat),
+        .newMap_rrat(newMap_rrat),
+
+        .SYS(SYS),
+        .flush(flush));
+
+
+
+    //******************************************************************************
     wire [31:0] Instr1_EXEMEM;
     wire [31:0] Instr1_PC_EXEMEM;
     wire [31:0] ALU_result1_EXEMEM;
@@ -204,57 +257,13 @@ module MIPS (
     wire [5:0] exe_broadcast_map;
     wire [31:0] exe_broadcast_val;
     wire [4:0] exe_broadcast_reg;
-
     wire [5:0] exe_RegWr_map;
-
-
-    ROB ROB (
-        .clk(CLK),
-        .reset(RESET),
-        .stall(0),
-
-        .rename_enque(allocate_ROB),
-        .rename_instr_num(instr_num_ROB),
-        .rename_RegWr(reg_wrt_ROB),
-        .rename_enque_data(all_info_ROB),
-
-        .exe_complete_flag(0),
-        .exe_broadcast_flag(exe_broadcast_flag),
-        .exe_Request_alt_pc(request_alt_pc),
-        .exe_Alt_PC(alt_addr),
-        .exe_instr_num(0),
-
-        .mem_complete_flag(0),
-        .mem_broadcast_flag(0),
-        .mem_instr_num(0),
-
-        .rrat_map(),
-
-        .Request_alt_pc_IF(),
-        .Alt_PC_IF(),
-
-        .head_instr_num(),
-
-        .ROB_halt(),
-        .rename_free(),
-        .rename_free_reg(),
-
-        .newMap_flag_rrat(),
-        .reg2map_rrat(),
-        .newMap_rrat(),
-
-        .SYS(),
-        .flush());
-
-
-
-    //******************************************************************************
+    wire complete_flag_rob;
 	EXE EXE(
     //******************************************************************************
     .IF_all_info(IF_all_info_EXE),
     .Request_Alt_PC(request_alt_pc),
     .alt_addr(alt_addr),
-    .flush(flush),
 
     .issue_instr_num(instr_num_exe),
 
@@ -265,6 +274,7 @@ module MIPS (
     .broadcast_map(exe_broadcast_map),
     .broadcast_reg(exe_broadcast_reg),
     .broadcast_val(exe_broadcast_val),
+    .complete_flag_rob(complete_flag_rob),
 
     // to mem stuff for broadcast
     .exe_instr_num(exe_instr_num),
@@ -324,9 +334,10 @@ module MIPS (
     assign unused_d2 = block_write_fDM_valid;
 
     wire [5:0] mem_broadcast_map;
-
+    wire mem_complete_flag_rob;
 
     integer exe_instr_num;
+    integer mem_instr_num;
     MEM MEM(
 //******************************************************************************
         .EXE_all_info(EXE_all_info_MEM),
@@ -335,6 +346,7 @@ module MIPS (
 
         .broadcast_map(mem_broadcast_map),
         .mem_instr_num(mem_instr_num),
+        .mem_complete_flag_rob(mem_complete_flag_rob),
 //******************************************************************************
         .CLK(CLK),
         .RESET(RESET),

@@ -103,7 +103,7 @@ always @(negedge CLK or negedge RESET) begin
         entry_ld_lsq <= 0;
         entry_st_lsq <= 0;
         busy <= 0;
-        instr_num <= 1;
+        instr_num <= 0;
         remap_FRAT <= 0;
         oldA <= 0;
         oldB <= 0;
@@ -112,7 +112,7 @@ always @(negedge CLK or negedge RESET) begin
         // busyA <= 0;
         // busyA <= 0;
         // busyA <= 0;
-    end else if(!CLK & !(issue_halt | STALL | rob_halt | lsq_halt | free_halt | FLUSH)) begin
+    end else if(!CLK & !(issue_halt | STALL | rob_halt | lsq_halt | free_halt | FLUSH) & (id_instrpc != 0)) begin
         entry_allocate_ROB <= 1;
         instr_num <= instr_num + 1;
         entry_ROB[169:18] <= {id_control, id_instr, id_instrpc};
@@ -166,6 +166,7 @@ end
 
 always @(negedge CLK) begin
     `ifdef RENAME
+        $display("\n\n\n\n\n\n\n\n\n\n");
         $display("\t\t\t\tRename");
         $display("Instr: %x, InstrPC: %x", id_instr, id_instrpc);
         $display("RS: %d, RT: %d, RD: %d, MS: %d, MT: %d, MD: %d", id_RegA, id_RegB, id_RegWr, frat_my_map[id_RegA], frat_my_map[id_RegB], (id_ld_flag | id_RegWr_flag) ? free_reg : frat_my_map[id_RegWr]);

@@ -24,7 +24,6 @@ module EXE(
     input [34:0] IF_all_info,
     output reg Request_Alt_PC,
     output reg [31:0] alt_addr,
-    output flush,
     output [34:0] all_info_MEM,
 
     input [5:0] issue_RegWr_map,
@@ -149,15 +148,15 @@ wire [31:0] MemWriteData1;
 
 assign MemWriteData1 = MemWriteData1_IN;
 
-reg take;
-reg [31:0] addr;
-integer instr_num_backup;
-always @(posedge CLK) begin
-    if(Instr1_PC_IN != 0) begin
-        take <= Request_Alt_PC1;
-        addr <= IF_all_info[2] ? A1 : IF_all_info[34:3];
-    end
-end
+// reg take;
+// reg [31:0] addr;
+// integer instr_num_backup;
+// always @(posedge CLK) begin
+//     if(Instr1_PC_IN != 0) begin
+//         take <= Request_Alt_PC1;
+//         addr <= IF_all_info[2] ? A1 : IF_all_info[34:3];
+//     end
+// end
 
 
 always @(posedge CLK or negedge RESET) begin
@@ -177,8 +176,8 @@ always @(posedge CLK or negedge RESET) begin
         broadcast_reg <= 0;
         broadcast_map <= 0;
         broadcast_val <= 0;
-        flush <= 0;
         exe_instr_num <= 0;
+        complete_flag_rob <= 0;
         $display("EXE:RESET");
   	end else if(CLK) begin
         HI <= new_HI;
@@ -193,10 +192,9 @@ always @(posedge CLK or negedge RESET) begin
         ALU_Control1_OUT <= ALU_Control1_IN;
         MemRead1_OUT <= MemRead1_IN;
         MemWrite1_OUT <= MemWrite1_IN;
-        Request_Alt_PC <= (Instr1_PC_IN != 0) ? take : 0;
-        alt_addr <= (Instr1_PC_IN != 0) ? addr : 0;
+        Request_Alt_PC <= Request_Alt_PC1;
+        alt_addr <= IF_all_info[2] ? A1 : IF_all_info[34:3];
         all_info_MEM <= IF_all_info;
-        flush <= (Instr1_PC_IN != 0) ? take : 0;
         //********************************************************************************************************
         // Request_Alt_PC      <= (Instr1_PC_IN != {32{1'b0}}) ? take : 0; //Request_Alt_PC1;//
         // alt_addr            <= (Instr1_PC_IN != {32{1'b0}}) ? addr : 0; //issue_jr_flag ? A1 : issue_alt_PC;//
@@ -211,11 +209,11 @@ always @(posedge CLK or negedge RESET) begin
         broadcast_val       <= ALU_result1;
         exe_RegWr_map       <= issue_RegWr_map;
         exe_instr_num       <= issue_instr_num;
-        complete_flag_rob   <= !MemRead1_IN && !MemWrite1_IN;
+        complete_flag_rob   <= !MemRead1_IN && !MemWrite1_IN && (issue_instr_num != 0);
         //********************************************************************************************************
 
 		if(comment1) begin
-                $display("EXE:Instr1=%x,Instr1_PC=%x,ALU_result1=%x; Write?%d to %d",Instr1_IN,Instr1_PC_IN,ALU_result1, RegWrite1_IN, WriteRegister1_IN);
+                $display("EXE:Instr1=%x,Instr1_PC=%x,ALU_result1=%x; Write?%d to %d, Instr Num: %d",Instr1_IN,Instr1_PC_IN,ALU_result1, RegWrite1_IN, WriteRegister1_IN, issue_instr_num);
                 $display("Take: %x, Addr: %x, Request: %x, Alt addr: %x", take, addr, Request_Alt_PC, alt_addr);
                 $display("EXE:ALU_Control1=%x; MemRead1=%d; MemWrite1=%d (Data:%x)",ALU_Control1_IN, MemRead1_IN, MemWrite1_IN, MemWriteData1);
                 $display("EXE:OpA1=%x; OpB1=%x; HI=%x; LO=%x", A1, B1, new_HI,new_LO);

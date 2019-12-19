@@ -159,7 +159,7 @@ Arbiter_main instr_Arbiter(
     .granted(instr_out_index)
 );
 
-Arbiter_main #(.DIRECTION(1)) issue_Arbiter(
+Arbiter_main #(.DIRECTION(0)) issue_Arbiter(
     .ready(empty_in_issue),
     .grant(),
     .granted(empty_spot)
@@ -215,7 +215,7 @@ always @(posedge CLK or negedge RESET) begin
             empty_in_issue[empty_spot]   <= 0;
             issue_q[empty_spot][137:0]   <= rename_issueinfo[137:0];
             ready_q[0][empty_spot] <= (MapA == 0) ? 1 : ~busy[MapA];//(jum p_flag & jr _flag) ? 1 : (link_flag ? 0 :1);
-            ready_q[1][empty_spot] <= (MapB == 0) ? (jump_flag ? 0 : 1) : ~busy[MapB];
+            ready_q[1][empty_spot] <= (MapB == 0) ? 1 : ~busy[MapB];
             ready_q[2][empty_spot] <= ((RegDest_flag | link_flag | (MapWr == 0) | RegWr_flag) & !MemWr_flag) ? 1 : ~busy[MapWr]; //This is for Memwrite
             ready_q[3][empty_spot] <= (MemRd_flag & ((alu_con == 6'b101101) || (alu_con == 6'b101110))) ? ~busy[load_special_mapping] : 1;
             load_special_mappings[empty_spot] <= load_special_mapping;
